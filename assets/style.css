@@ -1,0 +1,955 @@
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: #f4f5f7;
+  color: #222;
+}
+
+.home, .auth {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 24px 16px 80px;
+}
+
+h1 { text-align: center; }
+
+.child-card {
+  background: white;
+  border-radius: 20px;
+  padding: 20px;
+  margin: 16px 0;
+  box-shadow: 0 8px 24px rgba(0,0,0,.08);
+}
+
+.child-card.minecraft {
+  background: linear-gradient(180deg, rgba(46, 61, 38, 0.96), rgba(20, 28, 19, 0.96));
+  border: 3px solid #1f1f1f;
+  box-shadow: inset -4px -4px 0 rgba(0,0,0,.35), inset 4px 4px 0 rgba(255,255,255,.12);
+  color: #f8fafc;
+}
+
+.child-card.minecraft .card-head h2,
+.child-card.minecraft .daily-row,
+.child-card.minecraft .pool-line,
+.child-card.minecraft .overflow-note,
+.child-card.minecraft .balance-right,
+.child-card.minecraft .balance-right strong,
+.child-card.minecraft .daily-row strong {
+  color: #f8fafc;
+}
+
+.child-card.minecraft .progress {
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.12);
+}
+
+.child-card.minecraft .bar {
+  background: linear-gradient(90deg, #7ee787 0%, #55a630 100%);
+}
+
+.child-card.minecraft .button.shop-entry {
+  background: #55a630;
+  border: 3px solid #1f1f1f;
+  box-shadow: inset 0 0 0 2px rgba(255,255,255,0.08);
+  color: white;
+  font-family: "Press Start 2P", "Courier New", monospace;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+}
+
+.child-card.music {
+  background: linear-gradient(180deg, #ffffff 0%, #f9f5ff 100%);
+  border: 2px solid #e9e0ff;
+  box-shadow: 0 10px 26px rgba(90, 70, 160, .10);
+}
+
+.child-card.music .progress {
+  background: #efe9ff;
+}
+
+.child-card.music .bar {
+  background: linear-gradient(90deg, #ad8cff 0%, #7c5cff 100%);
+}
+
+.child-card.music .button.shop-entry {
+  background: linear-gradient(180deg, #8c6bff 0%, #7c5cff 100%);
+  border: 0;
+  box-shadow: 0 8px 16px rgba(124, 92, 255, 0.2);
+  color: white;
+}
+
+.progress {
+  height: 14px;
+  background: #e5e7eb;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.bar {
+  height: 100%;
+  background: #22c55e;
+  transition: width .6s ease;
+}
+
+.bar.gold {
+  background: #f59e0b;
+}
+
+.button {
+  display: block;
+  text-align: center;
+  margin-top: 16px;
+  padding: 14px;
+  border-radius: 14px;
+  background: #2563eb;
+  color: white;
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.parent-link {
+  display: block;
+  text-align: center;
+  margin-top: 32px;
+  color: #666;
+}
+
+.error {
+  color: #dc2626;
+}
+
+form {
+  display: grid;
+  gap: 10px;
+}
+
+input {
+  padding: 14px;
+  border-radius: 12px;
+  border: 1px solid #ccc;
+  font-size: 16px;
+}
+
+button {
+  padding: 14px;
+  border: 0;
+  border-radius: 12px;
+  background: #2563eb;
+  color: white;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.parent {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 24px 16px 80px;
+}
+
+.summary {
+  display: grid;
+  gap: 12px;
+  margin: 20px 0;
+}
+
+.summary-card {
+  background: white;
+  border-radius: 18px;
+  padding: 16px;
+  box-shadow: 0 6px 18px rgba(0,0,0,.07);
+  margin: 0 0 18px;
+}
+
+.parent > .summary-card + .summary-card {
+  margin-top: 0;
+}
+
+.selector {
+  background: white;
+  border-radius: 18px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.child-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.child-button {
+  flex: 1;
+  text-align: center;
+  padding: 14px;
+  border-radius: 14px;
+  background: #e5e7eb;
+  color: #222;
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.child-button.active {
+  background: #2563eb;
+  color: white;
+}
+
+.record-form {
+  background: white;
+  border-radius: 18px;
+  padding: 20px;
+  display: grid;
+  gap: 14px;
+}
+
+.quality {
+  display: grid;
+  gap: 10px;
+}
+
+.quality label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 12px;
+}
+
+.result-card {
+  background: white;
+  border-radius: 18px;
+  padding: 20px;
+  margin: 20px 0;
+}
+
+.back {
+  display: inline-block;
+  margin-bottom: 12px;
+  color: #2563eb;
+  text-decoration: none;
+}
+
+.secondary {
+  background: #e5e7eb;
+  color: #222;
+  margin-top: 10px;
+}
+
+.logout {
+  display: block;
+  text-align: center;
+  margin-top: 24px;
+  color: #dc2626;
+}
+
+.success {
+  background: #dcfce7;
+  color: #166534;
+  padding: 12px 14px;
+  border-radius: 12px;
+  font-weight: 700;
+}
+
+.celebrate-banner {
+  position: fixed;
+  left: 50%;
+  bottom: 32px;
+  transform: translateX(-50%);
+  background: #111827;
+  color: white;
+  padding: 16px 22px;
+  border-radius: 16px;
+  font-weight: 800;
+  box-shadow: 0 12px 30px rgba(0,0,0,.25);
+  z-index: 999;
+  animation: pop-in .35s ease-out;
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(20px) scale(.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+}
+
+.card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.balance-right {
+  text-align: right;
+  font-size: 14px;
+  color: #555;
+}
+
+.balance-right strong {
+  display: block;
+  font-size: 26px;
+  color: #111;
+}
+
+.daily-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 14px;
+  margin-bottom: 6px;
+}
+
+.progress {
+  height: 12px;
+}
+
+.pool-line {
+  margin-top: 12px;
+  font-weight: 600;
+}
+
+.overflow-note {
+  margin-top: 8px;
+  color: #b45309;
+  font-weight: 700;
+}
+
+.behavior-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.behavior-card {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 8px;
+  padding: 12px;
+  border: 2px solid #e5e7eb;
+  border-radius: 14px;
+  cursor: pointer;
+  background: white;
+}
+
+.behavior-card input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.behavior-card.selected,
+.behavior-card:has(input:checked) {
+  border-color: #2563eb;
+  background: #eff6ff;
+}
+
+.behavior-emoji {
+  font-size: 24px;
+  grid-column: 1;
+}
+
+.behavior-label {
+  font-size: 13px;
+  line-height: 1.3;
+  grid-column: 2;
+}
+
+.behavior-points {
+  grid-column: 2;
+  font-weight: 800;
+  color: #16a34a;
+}
+
+.quality-group {
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 14px;
+}
+
+.quality-radios {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.choice-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+}
+
+.choice-card:has(input:checked) {
+  border-color: #2563eb;
+  background: #eff6ff;
+}
+
+.toggle-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+  font-weight: 700;
+  flex-wrap: wrap;
+}
+
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  min-width: 52px;
+  flex-shrink: 0;
+}
+
+.toggle input {
+  position: absolute;
+  opacity: 0;
+}
+
+.slider {
+  width: 52px;
+  height: 30px;
+  background: #d1d5db;
+  border-radius: 999px;
+  position: relative;
+  transition: background .2s;
+  display: inline-block;
+}
+
+.slider::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 24px;
+  height: 24px;
+  background: white;
+  border-radius: 50%;
+  transition: transform .2s;
+}
+
+.toggle input:checked + .slider {
+  background: #f59e0b;
+}
+
+.toggle input:checked + .slider::after {
+  transform: translateX(22px);
+}
+
+.score-preview {
+  margin-top: 4px;
+  padding: 14px 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #fffaf5 0%, #fff 100%);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.03);
+}
+
+.score-preview-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #374151;
+}
+
+.score-preview-heading strong {
+  font-size: 24px;
+  line-height: 1.1;
+  color: #f59e0b;
+}
+
+#score-preview-formula {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #475569;
+}
+
+.score-preview small {
+  display: block;
+  margin-top: 8px;
+  color: #64748b;
+  line-height: 1.5;
+}
+
+.home .language-toolbar,
+.shop-topbar .language-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin: 0 0 12px;
+}
+
+.shop-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.back-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  padding: 8px 12px;
+  border: 1px solid rgba(37, 99, 235, 0.18);
+  border-radius: 999px;
+  background: #ffffff;
+  color: #1d4ed8;
+  text-decoration: none;
+  font-weight: 700;
+  box-shadow: 0 6px 14px rgba(37, 99, 235, 0.08);
+}
+
+body.minecraft .back-button {
+  background: rgba(255,255,255,0.08);
+  border-color: rgba(255,255,255,0.2);
+  color: #fff;
+  box-shadow: inset 0 0 0 2px rgba(255,255,255,0.12);
+}
+
+body.music .back-button {
+  background: #ffffff;
+  border-color: rgba(124, 92, 255, 0.18);
+  color: #4f46e5;
+  box-shadow: 0 8px 16px rgba(124, 92, 255, 0.08);
+}
+
+.language-toggle {
+  padding: 6px 12px;
+  min-width: 52px;
+  border: 1px solid rgba(37, 99, 235, 0.18);
+  border-radius: 999px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.12);
+  cursor: pointer;
+}
+
+.language-toggle:hover {
+  background: #dbeafe;
+}
+
+.pending-cart {
+  margin-top: 18px;
+}
+
+.pending-cart-title {
+  margin: 0 0 12px;
+  font-size: 18px;
+  letter-spacing: 0.01em;
+}
+
+.cart-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+  box-shadow: 0 8px 16px rgba(15, 23, 42, 0.04);
+}
+
+.cart-card.minecraft {
+  background: #2f2f2f;
+  border: 3px solid #1f1f1f;
+  border-radius: 16px;
+  box-shadow: inset -4px -4px 0 rgba(0,0,0,.35), inset 4px 4px 0 rgba(255,255,255,.12);
+}
+
+.cart-card.music {
+  background: white;
+  border: 2px solid #e9e0ff;
+  border-radius: 22px;
+  box-shadow: 0 10px 26px rgba(90, 70, 160, .10);
+}
+
+.cart-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: rgba(37, 99, 235, 0.08);
+  font-size: 28px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.cart-icon.minecraft {
+  background: rgba(255,255,255,0.08);
+  border: 2px solid rgba(255,255,255,0.08);
+  color: #fff;
+}
+
+.cart-icon.music {
+  background: rgba(124, 92, 255, 0.08);
+  border: 1px solid rgba(124, 92, 255, 0.12);
+}
+
+.reward-approved {
+  border-color: #86efac;
+  background: linear-gradient(180deg, #f0fdf4 0%, #ffffff 100%);
+}
+
+.reward-approved.minecraft {
+  border-color: #4e7a31;
+  background: linear-gradient(180deg, rgba(35, 104, 52, 0.55), rgba(47, 47, 47, 1));
+}
+
+.reward-approved.music {
+  border-color: #9ae6b4;
+  background: linear-gradient(180deg, #f0fdf4 0%, #ffffff 100%);
+}
+
+.reward-pending {
+  border-color: #fcd34d;
+  background: linear-gradient(180deg, #fffaf0 0%, #ffffff 100%);
+}
+
+.reward-pending.minecraft {
+  border-color: #d97706;
+  background: linear-gradient(180deg, rgba(120, 83, 9, 0.45), rgba(47, 47, 47, 1));
+}
+
+.reward-pending.music {
+  border-color: #f9d979;
+  background: linear-gradient(180deg, #fffaf0 0%, #ffffff 100%);
+}
+
+.reward-approved .cart-icon {
+  background: rgba(34, 197, 94, 0.12);
+}
+
+.reward-approved.minecraft .cart-icon {
+  background: rgba(34, 197, 94, 0.18);
+  border-color: rgba(134, 239, 172, 0.5);
+}
+
+.reward-approved.music .cart-icon {
+  background: rgba(34, 197, 94, 0.12);
+  border-color: rgba(34, 197, 94, 0.2);
+}
+
+.reward-pending .cart-icon {
+  background: rgba(245, 158, 11, 0.12);
+}
+
+.reward-pending.minecraft .cart-icon {
+  background: rgba(245, 158, 11, 0.18);
+  border-color: rgba(252, 211, 77, 0.45);
+}
+
+.reward-pending.music .cart-icon {
+  background: rgba(245, 158, 11, 0.12);
+  border-color: rgba(245, 158, 11, 0.2);
+}
+
+.cart-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.cart-info h3 {
+  margin: 0 0 5px;
+  font-size: 16px;
+  line-height: 1.35;
+  letter-spacing: 0.01em;
+}
+
+.cart-info p {
+  margin: 0 0 4px;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.cart-status {
+  display: inline-block;
+  margin-bottom: 3px;
+  font-size: 12px;
+  line-height: 1.4;
+  letter-spacing: 0.02em;
+}
+
+.cart-info small {
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.modal {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(15, 23, 42, 0.5);
+  z-index: 1000;
+}
+
+.modal.hidden {
+  display: none;
+}
+
+.modal-card {
+  width: min(100%, 360px);
+  background: white;
+  border-radius: 18px;
+  padding: 22px 20px 18px;
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.2);
+}
+
+.modal-card h2 {
+  margin: 0 0 8px;
+  font-size: 20px;
+  line-height: 1.35;
+}
+
+.modal-card p {
+  margin: 0 0 16px;
+  color: #475569;
+  line-height: 1.6;
+}
+
+.modal-card button {
+  width: 100%;
+  margin-top: 6px;
+  border-radius: 12px;
+  background: #2563eb;
+  color: white;
+  font-weight: 700;
+}
+
+body.minecraft .pending-cart {
+  margin-top: 18px;
+}
+
+body.minecraft .pending-cart-title {
+  color: #f8fafc;
+  text-shadow: 2px 2px 0 #000;
+}
+
+body.minecraft .cart-card {
+  background: #2f2f2f;
+  border: 3px solid #1f1f1f;
+  border-radius: 16px;
+  box-shadow: inset -4px -4px 0 rgba(0,0,0,.35), inset 4px 4px 0 rgba(255,255,255,.12);
+}
+
+body.minecraft .reward-approved {
+  border-color: #4e7a31;
+  background: linear-gradient(180deg, rgba(35, 104, 52, 0.55), rgba(47, 47, 47, 1));
+}
+
+body.minecraft .reward-pending {
+  border-color: #d97706;
+  background: linear-gradient(180deg, rgba(120, 83, 9, 0.45), rgba(47, 47, 47, 1));
+}
+
+body.minecraft .cart-icon {
+  background: rgba(255,255,255,0.08);
+  border: 2px solid rgba(255,255,255,0.08);
+  color: #fff;
+}
+
+body.minecraft .reward-approved .cart-icon {
+  background: rgba(34, 197, 94, 0.18);
+  border-color: rgba(134, 239, 172, 0.5);
+}
+
+body.minecraft .reward-pending .cart-icon {
+  background: rgba(245, 158, 11, 0.18);
+  border-color: rgba(252, 211, 77, 0.45);
+}
+
+body.minecraft .cart-info h3,
+body.minecraft .cart-info p,
+body.minecraft .cart-status,
+body.minecraft .cart-info small {
+  color: #f8fafc;
+}
+
+body.minecraft .reward-approved .cart-status {
+  color: #a7f3d0;
+}
+
+body.minecraft .reward-pending .cart-status {
+  color: #fde68a;
+}
+
+body.music .pending-cart {
+  margin-top: 18px;
+}
+
+body.music .pending-cart-title {
+  color: #2b2b3a;
+}
+
+body.music .cart-card {
+  background: white;
+  border: 2px solid #e9e0ff;
+  border-radius: 22px;
+  box-shadow: 0 10px 26px rgba(90, 70, 160, .10);
+}
+
+body.music .reward-approved {
+  border-color: #9ae6b4;
+  background: linear-gradient(180deg, #f0fdf4 0%, #ffffff 100%);
+}
+
+body.music .reward-pending {
+  border-color: #f9d979;
+  background: linear-gradient(180deg, #fffaf0 0%, #ffffff 100%);
+}
+
+body.music .cart-icon {
+  background: rgba(124, 92, 255, 0.08);
+  border: 1px solid rgba(124, 92, 255, 0.12);
+}
+
+body.music .reward-approved .cart-icon {
+  background: rgba(34, 197, 94, 0.12);
+  border-color: rgba(34, 197, 94, 0.2);
+}
+
+body.music .reward-pending .cart-icon {
+  background: rgba(245, 158, 11, 0.12);
+  border-color: rgba(245, 158, 11, 0.2);
+}
+
+body.music .cart-info h3,
+body.music .cart-info p {
+  color: #2b2b3a;
+}
+
+body.music .reward-approved .cart-status {
+  color: #166534;
+}
+
+body.music .reward-pending .cart-status {
+  color: #92400e;
+}
+
+body.music .cart-info small {
+  color: #6b7280;
+}
+
+[data-reward-name] {
+  color: #111827;
+}
+
+body:not(.minecraft):not(.music) [data-reward-name] {
+  color: #111827;
+}
+
+body.minecraft [data-reward-name] {
+  color: #f8fafc;
+}
+
+body.music [data-reward-name] {
+  color: #111827;
+}
+
+.child-card.minecraft [data-reward-name],
+.child-card.minecraft .cart-info h3,
+.child-card.minecraft .cart-info p,
+.child-card.minecraft .cart-status,
+.child-card.minecraft .cart-info small {
+  color: #1f2937 !important;
+}
+
+.child-card.music [data-reward-name],
+.child-card.music .cart-info h3,
+.child-card.music .cart-info p,
+.child-card.music .cart-status,
+.child-card.music .cart-info small {
+  color: #2b2b3a !important;
+}
+
+body:not(.minecraft):not(.music) .cart-info h3,
+body:not(.minecraft):not(.music) .cart-info p,
+body:not(.minecraft):not(.music) .cart-status,
+body:not(.minecraft):not(.music) .cart-info small {
+  color: inherit;
+}
+
+body.minecraft .reward-card h2,
+body.minecraft [data-reward-name] {
+  color: #f8fafc;
+}
+
+body.music .reward-card h2,
+body.music [data-reward-name] {
+  color: #111827;
+}
+
+@media (max-width: 420px) {
+  .cart-card {
+    gap: 10px;
+    padding: 10px 12px;
+  }
+
+  .cart-icon {
+    width: 36px;
+    height: 36px;
+    font-size: 20px;
+  }
+
+  .cart-info h3 {
+    font-size: 15px;
+  }
+
+  .modal-card {
+    padding: 18px 16px 16px;
+  }
+}
+
+body.minecraft .balance-right,
+body.minecraft .balance-right span,
+body.minecraft .balance-right strong,
+body.minecraft .daily-row span,
+body.minecraft .daily-row strong,
+body.minecraft .pool-line,
+body.minecraft .pool-line span,
+body.minecraft .overflow-note,
+body.minecraft .card-head h2,
+body.minecraft .card-head h2 span {
+  color: #f8fafc;
+}
+
+body.minecraft .daily-row {
+  color: #f8fafc;
+}
+
+body:not(.minecraft) .balance-right,
+body:not(.minecraft) .balance-right span,
+body:not(.minecraft) .balance-right strong,
+body:not(.minecraft) .daily-row span,
+body:not(.minecraft) .daily-row strong,
+body:not(.minecraft) .pool-line,
+body:not(.minecraft) .pool-line span,
+body:not(.minecraft) .overflow-note {
+  color: inherit;
+}
+
+body:not(.minecraft) .balance-right strong {
+  color: #111;
+}

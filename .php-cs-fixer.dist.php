@@ -1,0 +1,31 @@
+<?php
+
+$finder = PhpCsFixer\Finder::create()
+    ->in(__DIR__)
+    ->exclude('vendor')
+    ->name('*.php');
+
+return (new PhpCsFixer\Config())
+    ->setRiskyAllowed(false)
+    ->setRules([
+        '@PSR12' => true,
+        'array_syntax' => ['syntax' => 'short'],
+        'binary_operator_spaces' => ['default' => 'single_space'],
+        'blank_line_after_opening_tag' => true,
+        'blank_line_before_statement' => [
+            'statements' => ['return', 'throw', 'try', 'if', 'foreach', 'for', 'while', 'switch'],
+        ],
+        'class_definition' => ['multi_line_extends_each_single_line' => true],
+        'concat_space' => ['spacing' => 'one'],
+        'function_declaration' => ['closure_fn_spacing' => 'one'],
+        'indentation_type' => true,
+        'line_ending' => true,
+        'method_argument_space' => ['on_multiline' => 'ensure_fully_multiline'],
+        'no_extra_blank_lines' => true,
+        'no_unused_imports' => true,
+        'not_operator_with_successor_space' => true,
+        'ordered_imports' => true,
+        'single_quote' => true,
+        'whitespace_after_comma_in_array' => true,
+    ])
+    ->setFinder($finder);
