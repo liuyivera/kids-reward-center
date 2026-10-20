@@ -1,76 +1,80 @@
 <?php
-require_once __DIR__ . '/includes/db.php';
-
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-
 require_once __DIR__ . '/includes/auth.php';
-
-$rewardExpiry = db()->query(
-    'SELECT UNIX_TIMESTAMP(CURRENT_DATE() + INTERVAL 1 DAY)'
-)->fetchColumn();
+require_once __DIR__ . '/includes/db.php';
 
 $requestedChildId = isset($_GET['child_id']) ? (int) $_GET['child_id'] : 0;
 $accessCode = trim((string) ($_GET['access_code'] ?? ''));
-$selectedFamilyId = null;
-$child = null;
-
-if ($accessCode !== '') {
-    $childStmt = db()->prepare(
-        'SELECT * FROM children WHERE id = ? AND access_code = ? AND (access_code_expires_at IS NULL OR access_code_expires_at > NOW())'
-    );
-    $childStmt->execute([$requestedChildId, $accessCode]);
-    $child = $childStmt->fetch();
-
-    if ($child) {
-        $selectedFamilyId = (int) ($child['family_id'] ?? 0);
-    }
-}
-
-if (! $child && ! empty($_SESSION['parent_id'])) {
-    if (! empty($_SESSION['parent_id'])) {
-        $selectedFamilyId = currentParentFamilyId();
-    }
-    if (! empty($_SESSION['dev_family_id']) && isAppCreator()) {
-        $selectedFamilyId = (int) $_SESSION['dev_family_id'];
-    }
-}
 
 if ($requestedChildId <= 0) {
-    exit('孩子不存在');
+    http_response_code(400);
+    exit('缺少孩子 ID。');
+}
+
+// === 三选一身份验证 ===
+$child = null;
+$accessMode = null;
+
+// A. 孩子用 access_code 访问
+if ($accessCode !== '') {
+    $stmt = db()->prepare(
+        'SELECT * FROM children
+         WHERE id = ? AND access_code = ?
+           AND (access_code_expires_at IS NULL OR access_code_expires_at > NOW())'
+    );
+    $stmt->execute([$requestedChildId, $accessCode]);
+    $child = $stmt->fetch();
+
+    if ($child) {
+        $accessMode = 'child';
+        $_SESSION['child_access_child_id'] = $requestedChildId;
+        $_SESSION['child_access_code'] = $accessCode;
+    }
+}
+
+// B / C. 家长登录（含 creator dev 切换）
+if (! $child && ! empty($_SESSION['parent_id'])) {
+    $parentFamilyId = currentParentFamilyId();
+
+    if ($parentFamilyId !== null) {
+        $stmt = db()->prepare(
+            'SELECT * FROM children WHERE id = ? AND family_id = ?'
+        );
+        $stmt->execute([$requestedChildId, $parentFamilyId]);
+        $child = $stmt->fetch();
+
+        if ($child) {
+            $accessMode = (isAppCreator() && ! empty($_SESSION['dev_family_id']))
+                ? 'creator'
+                : 'parent';
+        }
+    }
 }
 
 if (! $child) {
-    $childStmt = db()->prepare('SELECT * FROM children WHERE id = ?');
-    $childStmt->execute([$requestedChildId]);
-    $child = $childStmt->fetch();
-}
-
-if (! $child) {
-    exit('孩子不存在');
-}
-
-if ($selectedFamilyId !== null && $selectedFamilyId > 0 && (int)$child['family_id'] !== $selectedFamilyId) {
     http_response_code(403);
-    exit('无权访问此家庭的孩子。');
+    exit('无权访问此孩子的商店。请使用家长提供的完整访问链接。');
 }
 
-if ($child && $accessCode !== '' && empty($_SESSION['parent_id'])) {
+// === 到此 $child 已验证 ===
+$familyName = '家庭';
+$familyId = (int) ($child['family_id'] ?? 0);
+if ($familyId > 0) {
     $familyStmt = db()->prepare('SELECT name FROM families WHERE id = ?');
-    $familyStmt->execute([(int) ($child['family_id'] ?? 0)]);
-    $family = $familyStmt->fetch();
-    $familyName = $family['name'] ?? '家庭';
-} elseif (! empty($_SESSION['parent_id'])) {
-    $familyName = currentFamilyName() ?? '家庭';
-} else {
-    $familyName = '家庭';
+    $familyStmt->execute([$familyId]);
+    $name = $familyStmt->fetchColumn();
+    if ($name !== false && $name !== null && $name !== '') {
+        $familyName = (string) $name;
+    }
 }
 
 $theme = strtolower((string) ($child['theme'] ?? 'minecraft'));
 $themeCss = file_exists(__DIR__ . '/assets/' . $theme . '.css')
     ? 'assets/' . $theme . '.css'
     : null;
+
+$rewardExpiry = db()->query(
+    'SELECT UNIX_TIMESTAMP(CURRENT_DATE() + INTERVAL 1 DAY)'
+)->fetchColumn();
 
 $rewardStmt = db()->prepare(
     'SELECT * FROM rewards
@@ -93,14 +97,10 @@ $pendingStmt = db()->prepare(
      WHERE rd.child_id = ?
        AND (
          rd.status = 'pending'
-         OR (
-           rd.status = 'approved'
-           AND rd.approved_at >= CURRENT_DATE()
-         )
+         OR (rd.status = 'approved' AND rd.approved_at >= CURRENT_DATE())
        )
      ORDER BY rd.id DESC"
 );
-
 $pendingStmt->execute([$requestedChildId]);
 $pending = $pendingStmt->fetchAll();
 ?>
@@ -115,24 +115,18 @@ $pending = $pendingStmt->fetchAll();
     <link rel="stylesheet" href="<?= htmlspecialchars($themeCss) ?>">
   <?php endif; ?>
 </head>
-<body class="<?= htmlspecialchars($theme) ?>" data-page-title="shopTitle">
+<body class="<?= htmlspecialchars($theme) ?>">
   <?php if (! empty($_SESSION['parent_id'])): ?>
     <?= renderFamilyWelcomeBanner() ?>
     <?= renderCreatorDevTool() ?>
-  <?php elseif (! empty($familyName)): ?>
+  <?php else: ?>
     <div style="position:fixed;left:16px;top:16px;z-index:9998;padding:8px 12px;background:rgba(15,23,42,0.82);color:#f8fafc;border:1px solid #475569;border-radius:999px;font-size:13px;font-weight:600;box-shadow:0 8px 20px rgba(15,23,42,0.22);backdrop-filter:blur(6px);">欢迎【<?= htmlspecialchars($familyName) ?>】</div>
   <?php endif; ?>
   <main class="shop">
     <div class="shop-topbar">
       <a class="back-button" href="index.php" data-i18n="backHome">⟵ 积分世界</a>
       <div class="language-toolbar">
-        <button
-          type="button"
-          class="language-toggle"
-          data-language-toggle
-        >
-          EN
-        </button>
+        <button type="button" class="language-toggle" data-language-toggle>EN</button>
       </div>
     </div>
 
@@ -172,7 +166,7 @@ $pending = $pendingStmt->fetchAll();
   </p>
 </section>
 
-    <?php if (! empty($pending)): ?>
+<?php if (! empty($pending)): ?>
   <section class="pending-cart" aria-label="我的奖励">
     <h2 class="pending-cart-title" data-i18n="myRewards">📦 我的奖励</h2>
 
@@ -226,6 +220,10 @@ $pending = $pendingStmt->fetchAll();
     <?php if ($canAfford): ?>
       <form method="post" action="request-reward.php">
         <input type="hidden" name="reward_id" value="<?= (int)$reward['id'] ?>">
+        <input type="hidden" name="child_id" value="<?= (int)$child['id'] ?>">
+        <?php if ($accessMode === 'child' && $accessCode !== ''): ?>
+          <input type="hidden" name="access_code" value="<?= htmlspecialchars($accessCode, ENT_QUOTES, 'UTF-8') ?>">
+        <?php endif; ?>
         <button type="submit" data-i18n="redeem">兑换</button>
       </form>
     <?php else: ?>
@@ -237,20 +235,17 @@ $pending = $pendingStmt->fetchAll();
     </section>
   </main>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.4/dist/confetti.browser.min.js"></script>
-<script src="assets/shop.js"></script>
+  <script src="assets/shop.js"></script>
 <div class="modal hidden" id="error-modal">
   <div class="modal-card">
     <h2>⏳ 已有兑换申请</h2>
     <p>请先等待家长确认当前的兑换请求。</p>
-    <button onclick="document.getElementById('error-modal').classList.add('hidden')">
-      知道了
-    </button>
+    <button onclick="document.getElementById('error-modal').classList.add('hidden')">知道了</button>
   </div>
 </div>
 
 <script>
   const params = new URLSearchParams(window.location.search);
-
   if (params.get("error") === "duplicate") {
     document.getElementById("error-modal").classList.remove("hidden");
   }
