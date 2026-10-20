@@ -1,8 +1,16 @@
--- Multi-family migration template
--- IMPORTANT:
--- 1) Review the actual table names in your DB before running this script.
--- 2) Run this in a staging/local copy first.
--- 3) Backup the production DB before any schema change.
+-- Multi-family migration for this app
+-- Current schema in local MAMP DB:
+-- - parent_users(id, username, password_hash, created_at)
+-- - children(id, name, theme, normal_balance, daily_points_today, last_score_date,
+--            quarterly_pool, daily_cap, quarterly_goal, created_at)
+--
+-- Safe plan:
+-- 1. Backup DB
+-- 2. Add families table
+-- 3. Add family_id columns to parent_users and children
+-- 4. Backfill with a default family
+-- 5. Validate data
+-- 6. Add foreign keys only if data is verified
 
 -- -----------------------------------------------------------------------------
 -- 1) Create family table
@@ -80,3 +88,18 @@ WHERE family_id IS NULL;
 -- SELECT * FROM parent_users WHERE family_id IS NULL;
 -- SELECT * FROM children WHERE family_id IS NULL;
 -- SELECT COUNT(*) FROM families;
+
+-- -----------------------------------------------------------------------------
+-- 7) Add child access code fields
+-- -----------------------------------------------------------------------------
+ALTER TABLE children
+    ADD COLUMN access_code VARCHAR(32) NULL AFTER family_id,
+    ADD COLUMN access_code_expires_at DATETIME NULL AFTER access_code,
+    ADD INDEX idx_children_access_code (access_code),
+    ADD INDEX idx_children_access_expires (access_code_expires_at);
+
+-- Optional: generate access code for existing children and keep it valid for 365 days
+-- UPDATE children
+-- SET access_code = UPPER(SUBSTRING(MD5(RAND()), 1, 8)),
+--     access_code_expires_at = DATE_ADD(NOW(), INTERVAL 365 DAY)
+-- WHERE access_code IS NULL;

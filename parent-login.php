@@ -9,8 +9,11 @@ if (empty($_SESSION['csrf_token'])) {
 $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (! hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'] ?? '')) {
-        $error = '页面已过期，请刷新后重试。';
+    $submittedToken = (string)($_POST['csrf_token'] ?? '');
+
+    if (! hash_equals($_SESSION['csrf_token'], $submittedToken)) {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+        $error = '登录会话已过期，已为您刷新安全令牌。请重新填写用户名和密码后再提交。';
     } else {
         $stmt = db()->prepare('SELECT * FROM parent_users WHERE username = ?');
         $stmt->execute([$_POST['username'] ?? '']);
@@ -19,6 +22,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($user && password_verify($_POST['password'] ?? '', $user['password_hash'])) {
             session_regenerate_id(true);
             $_SESSION['parent_id'] = $user['id'];
+            $_SESSION['parent_family_id'] = (int)($user['family_id'] ?? 0);
             header('Location: parent-dashboard.php');
             exit;
         }

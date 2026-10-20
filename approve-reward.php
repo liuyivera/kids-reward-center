@@ -12,9 +12,11 @@ verifyCsrf();
 
 $redemptionId = (int)($_POST['redemption_id'] ?? 0);
 $action = $_POST['action'] ?? '';
+$familyId = currentParentFamilyId();
 
-if (! in_array($action, ['approve', 'reject'], true)) {
-    exit('操作无效。');
+if ($familyId === null || ! in_array($action, ['approve', 'reject'], true)) {
+    http_response_code(403);
+    exit('无权执行此操作。');
 }
 
 $pdo = db();
@@ -22,18 +24,18 @@ $pdo->beginTransaction();
 
 try {
     $stmt = $pdo->prepare(
-        'SELECT rd.*, r.cost, r.title, c.normal_balance, c.theme
+        'SELECT rd.*, r.cost, r.title, c.id AS child_id, c.normal_balance, c.theme, c.family_id
          FROM redemptions rd
          JOIN rewards r ON r.id = rd.reward_id
          JOIN children c ON c.id = rd.child_id
-         WHERE rd.id = ? AND rd.status = "pending"
+         WHERE rd.id = ? AND rd.status = "pending" AND c.family_id = ?
          FOR UPDATE'
     );
-    $stmt->execute([$redemptionId]);
+    $stmt->execute([$redemptionId, $familyId]);
     $redemption = $stmt->fetch();
 
     if (! $redemption) {
-        throw new Exception('兑换请求不存在或已处理。');
+        throw new Exception('兑换请求不存在，或不属于当前家庭。');
     }
 
     if ($action === 'reject') {
@@ -56,12 +58,13 @@ try {
     $deduct = $pdo->prepare(
         'UPDATE children
          SET normal_balance = normal_balance - ?
-         WHERE id = ? AND normal_balance >= ?'
+         WHERE id = ? AND normal_balance >= ? AND family_id = ?'
     );
     $deduct->execute([
         $redemption['cost'],
         $redemption['child_id'],
-        $redemption['cost']
+        $redemption['cost'],
+        $familyId
     ]);
 
     if ($deduct->rowCount() !== 1) {

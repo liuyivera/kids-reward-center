@@ -1,4 +1,7 @@
 <?php
+header('Location: shop.php?child_id=2', true, 302);
+exit;
+
 require_once __DIR__ . '/includes/db.php';
 
 $rewardExpiry = db()->query(

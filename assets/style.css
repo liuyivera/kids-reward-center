@@ -143,9 +143,9 @@ button {
 }
 
 .parent {
-  max-width: 520px;
+  max-width: 600px;
   margin: 0 auto;
-  padding: 24px 16px 80px;
+  padding: 28px 16px 80px;
 }
 
 .summary {
@@ -160,9 +160,88 @@ button {
   padding: 16px;
   box-shadow: 0 6px 18px rgba(0,0,0,.07);
   margin: 0 0 18px;
+  border: 1px solid #e2e8f0;
 }
 
-.parent > .summary-card + .summary-card {
+.summary-card h2 {
+  margin: 0 0 12px;
+  font-size: 1.1rem;
+  color: #0f172a;
+}
+
+.summary-card p,
+.summary-card label,
+.summary-card .muted {
+  color: #475569;
+}
+
+.parent .child-card {
+  width: 100%;
+  padding: 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: none;
+}
+
+.parent .child-card .card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.parent .child-card h3,
+.parent .child-card strong,
+.parent .child-card .badge {
+  margin: 0;
+}
+
+.parent .child-card .button {
+  margin-top: 0;
+}
+
+.parent .approval-card {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 12px;
+}
+
+.parent .approval-card h2 {
+  margin-top: 0;
+}
+
+.parent .actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.parent .approve,
+.parent .reject,
+.parent .record-submit {
+  margin-top: 0;
+}
+
+.parent .record-form {
+  margin-top: 0;
+}
+
+.parent .child-access-box {
+  background: #f8fafc;
+  border-radius: 12px;
+}
+
+.parent .pending-box {
+  background: #fff7ed;
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.parent .pending-box h3 {
   margin-top: 0;
 }
 
@@ -901,55 +980,95 @@ body.music [data-reward-name] {
   color: #111827;
 }
 
-@media (max-width: 420px) {
-  .cart-card {
-    gap: 10px;
-    padding: 10px 12px;
-  }
-
-  .cart-icon {
-    width: 36px;
-    height: 36px;
-    font-size: 20px;
-  }
-
-  .cart-info h3 {
-    font-size: 15px;
-  }
-
-  .modal-card {
-    padding: 18px 16px 16px;
-  }
+.parent-shell {
+  min-height: 100vh;
+  background: #f4f5f7;
 }
 
-body.minecraft .balance-right,
-body.minecraft .balance-right span,
-body.minecraft .balance-right strong,
-body.minecraft .daily-row span,
-body.minecraft .daily-row strong,
-body.minecraft .pool-line,
-body.minecraft .pool-line span,
-body.minecraft .overflow-note,
-body.minecraft .card-head h2,
-body.minecraft .card-head h2 span {
-  color: #f8fafc;
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+  padding: 14px 24px;
+  background: rgba(15, 23, 42, 0.96);
+  color: white;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
+  backdrop-filter: blur(8px);
 }
 
-body.minecraft .daily-row {
-  color: #f8fafc;
+.topbar-brand {
+  font-weight: 800;
+  letter-spacing: 0.02em;
 }
 
-body:not(.minecraft) .balance-right,
-body:not(.minecraft) .balance-right span,
-body:not(.minecraft) .balance-right strong,
-body:not(.minecraft) .daily-row span,
-body:not(.minecraft) .daily-row strong,
-body:not(.minecraft) .pool-line,
-body:not(.minecraft) .pool-line span,
-body:not(.minecraft) .overflow-note {
-  color: inherit;
+.family-switcher {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 8px;
 }
 
-body:not(.minecraft) .balance-right strong {
-  color: #111;
+.family-switcher-select {
+  min-width: 120px;
+  max-width: 160px;
+  padding: 6px 8px;
+  border: 1px solid rgba(148, 163, 184, 0.38);
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.82);
+  color: #fff;
+  font-size: 11px;
+  line-height: 1.2;
+  cursor: pointer;
+}
+
+.family-switcher-select option {
+  color: #0f172a;
+}
+
+.topbar-nav {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-left: auto;
+}
+
+.nav-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+  border-radius: 999px;
+  color: rgba(255,255,255,0.85);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 600;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.nav-link:hover,
+.nav-link.active {
+  background: rgba(148, 163, 184, 0.18);
+  color: #fff;
+}
+
+.nav-link-logout {
+  margin-left: auto;
+  background: rgba(239, 68, 68, 0.12);
+  color: #fecaca;
+}
+
+.nav-link-logout:hover {
+  background: rgba(239, 68, 68, 0.22);
+  color: #fff;
+}
+
+.parent {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 28px 16px 80px;
 }

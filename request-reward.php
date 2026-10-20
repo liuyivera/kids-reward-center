@@ -1,5 +1,6 @@
 <?php
 
+require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/db.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -8,29 +9,38 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 $rewardId = (int)($_POST['reward_id'] ?? 0);
+$familyId = currentParentFamilyId();
+if ($familyId === null) {
+    http_response_code(403);
+    exit('无权访问此功能。');
+}
 
 $pdo = db();
 $pdo->beginTransaction();
 
 try {
     $rewardStmt = $pdo->prepare(
-        'SELECT * FROM rewards WHERE id = ? AND is_active = 1 FOR UPDATE'
+        'SELECT r.*
+         FROM rewards r
+         JOIN children c ON c.id = r.child_id
+         WHERE r.id = ? AND r.is_active = 1 AND c.family_id = ?
+         FOR UPDATE'
     );
-    $rewardStmt->execute([$rewardId]);
+    $rewardStmt->execute([$rewardId, $familyId]);
     $reward = $rewardStmt->fetch();
 
     if (! $reward) {
-        throw new Exception('奖励不存在。');
+        throw new Exception('奖励不存在或不属于当前家庭。');
     }
 
     $childStmt = $pdo->prepare(
-        'SELECT * FROM children WHERE id = ? FOR UPDATE'
+        'SELECT * FROM children WHERE id = ? AND family_id = ? FOR UPDATE'
     );
-    $childStmt->execute([$reward['child_id']]);
+    $childStmt->execute([$reward['child_id'], $familyId]);
     $child = $childStmt->fetch();
 
     if (! $child) {
-        throw new Exception('孩子不存在。');
+        throw new Exception('孩子不存在或不属于当前家庭。');
     }
 
     $pendingStmt = $pdo->prepare(
