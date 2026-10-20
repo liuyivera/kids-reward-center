@@ -33,6 +33,7 @@ $pending = $pending->fetchAll();
   <div class="parent-shell">
     <header class="topbar">
       <div class="topbar-brand">家庭积分世界</div>
+      <?= renderCreatorDevTool() ?>
       <nav class="topbar-nav" aria-label="家长导航">
         <a class="nav-link" href="parent-dashboard.php">控制台</a>
         <a class="nav-link" href="parent-record.php">记录积分</a>
@@ -50,8 +51,12 @@ $pending = $pending->fetchAll();
       </div>
 
       <?php if (isset($_GET['approved'])): ?>
-    <p class="success">✅ 兑换已确认，积分已扣除。</p>
-  <?php endif; ?>
+        <p class="success">✅ 兑换已确认，积分已扣除。</p>
+      <?php endif; ?>
+
+      <?php if (isset($_GET['rejected'])): ?>
+        <p class="success" style="background:#fee2e2;color:#991b1b;">❌ 兑换已拒绝。</p>
+      <?php endif; ?>
 
       <?php if (! $pending): ?>
         <p>目前没有待确认的兑换请求。</p>

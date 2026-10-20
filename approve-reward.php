@@ -47,7 +47,7 @@ try {
         $update->execute([$redemptionId]);
 
         $pdo->commit();
-        header('Location: parent-rewards.php');
+        header('Location: parent-rewards.php?rejected=1');
         exit;
     }
 
@@ -80,7 +80,7 @@ try {
 
     $pdo->commit();
 
-    header('Location: parent-rewards.php');
+    header('Location: parent-rewards.php?approved=1');
     exit;
 } catch (Exception $e) {
     $pdo->rollBack();
