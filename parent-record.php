@@ -52,7 +52,6 @@ if ($selectedChildId > 0) {
         exit('无权访问此孩子。');
     }
 
-    // 从已加载的 children 里取出完整记录，供预览使用
     foreach ($children as $c) {
         if ((int)$c['id'] === $selectedChildId) {
             $selectedChild = $c;
@@ -61,12 +60,10 @@ if ($selectedChildId > 0) {
     }
 }
 
-// 预览需要的每日进度（考虑跨日重置）
 $dailyCap = max(1, (int)($selectedChild['daily_cap'] ?? 25));
 $dailyPointsToday = max(0, (int)($selectedChild['daily_points_today'] ?? 0));
 $lastScoreDate = (string)($selectedChild['last_score_date'] ?? '');
 if ($lastScoreDate !== date('Y-m-d')) {
-    // 昨天/更早的记录，服务端明天会先清零，预览也按 0 算
     $dailyPointsToday = 0;
 }
 $dailyRemaining = max(0, $dailyCap - $dailyPointsToday);
@@ -79,10 +76,11 @@ $stmt = db()->prepare(
 $stmt->execute([$selectedChildId]);
 $behaviors = $stmt->fetchAll();
 
-$childEmoji = [
-    1 => '👦',
-    2 => '👧'
-];
+$emojiPool = ['👦', '👧', '🧒', '👶', '🐻', '🦊', '🐯', '🐼', '🐨', '🦁', '🐰', '🐷'];
+$childEmoji = [];
+foreach ($children as $i => $child) {
+    $childEmoji[(int)$child['id']] = $emojiPool[$i % count($emojiPool)];
+}
 ?>
 <!DOCTYPE html>
 <html lang="zh-CN">
@@ -91,6 +89,151 @@ $childEmoji = [
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>记录积分</title>
   <link rel="stylesheet" href="assets/style.css">
+  <style>
+    /* ===== 孩子选择卡片 ===== */
+    .child-buttons {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 12px;
+    }
+
+    .child-button {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 18px 12px;
+      border-radius: 16px;
+      background: #f8fafc;
+      border: 2px solid #e5e7eb;
+      color: #0f172a;
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 15px;
+      transition: border-color 0.2s ease, background 0.2s ease, transform 0.15s ease;
+      min-height: 130px;
+    }
+
+    .child-button:hover {
+      border-color: #93c5fd;
+      background: #eff6ff;
+    }
+
+    .child-button.active {
+      background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+      border-color: #2563eb;
+      color: #1e3a8a;
+      box-shadow: 0 6px 16px rgba(37, 99, 235, 0.15);
+    }
+
+    .child-button .child-emoji {
+      font-size: 44px;
+      line-height: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .child-button .child-name {
+      font-size: 15px;
+      line-height: 1.2;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* ===== 必填标记 ===== */
+    .required-star {
+      color: #dc2626;
+      margin-left: 2px;
+      font-weight: 700;
+    }
+
+    .section-title .required-star {
+      font-size: 1em;
+    }
+
+    /* ===== 行为卡片重排 ===== */
+    .behavior-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    .behavior-card {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      grid-template-rows: auto auto;
+      align-items: center;
+      gap: 6px 10px;
+      padding: 14px;
+      border: 2px solid #e5e7eb;
+      border-radius: 14px;
+      cursor: pointer;
+      background: #fff;
+      position: relative;
+      transition: border-color 0.2s ease, background 0.2s ease;
+    }
+
+    .behavior-card:hover {
+      border-color: #93c5fd;
+    }
+
+    .behavior-card.selected,
+    .behavior-card:has(input:checked) {
+      border-color: #2563eb;
+      background: #eff6ff;
+    }
+
+    .behavior-card input[type="radio"] {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .behavior-card .behavior-emoji {
+      grid-column: 1;
+      grid-row: 1;
+      font-size: 32px;
+      line-height: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 40px;
+      min-height: 40px;
+    }
+
+    .behavior-card .behavior-points {
+      grid-column: 3;
+      grid-row: 1;
+      justify-self: end;
+      font-size: 15px;
+      font-weight: 800;
+      color: #16a34a;
+      background: #dcfce7;
+      padding: 4px 10px;
+      border-radius: 999px;
+      line-height: 1;
+      white-space: nowrap;
+    }
+
+    .behavior-card .behavior-label {
+      grid-column: 1 / -1;
+      grid-row: 2;
+      font-size: 14px;
+      line-height: 1.4;
+      color: #0f172a;
+      font-weight: 600;
+      word-break: break-word;
+    }
+
+    .behavior-card.selected .behavior-label,
+    .behavior-card:has(input:checked) .behavior-label {
+      color: #1e3a8a;
+    }
+  </style>
 </head>
 <body>
   <div class="parent-shell">
@@ -114,17 +257,17 @@ $childEmoji = [
       </div>
 
       <section class="selector">
-        <p class="section-title">选择孩子</p>
+        <p class="section-title">选择孩子<span class="required-star">*</span></p>
         <div class="child-buttons">
           <?php foreach ($children as $child): ?>
             <a
               class="child-button <?= $child['id'] === $selectedChildId ? 'active' : '' ?>"
               href="?child_id=<?= (int)$child['id'] ?>"
             >
-              <span class="child-emoji">
-                <?= $childEmoji[$child['id']] ?? '🧒' ?>
+              <span class="child-emoji" aria-hidden="true">
+                <?= $childEmoji[(int)$child['id']] ?? '🧒' ?>
               </span>
-              <?= htmlspecialchars($child['name']) ?>
+              <span class="child-name"><?= htmlspecialchars($child['name']) ?></span>
             </a>
           <?php endforeach; ?>
         </div>
@@ -134,7 +277,7 @@ $childEmoji = [
         <?= csrfField() ?>
         <input type="hidden" name="child_id" value="<?= (int)$selectedChildId ?>">
 
-        <p class="section-title">选择行为</p>
+        <p class="section-title">选择行为<span class="required-star">*</span></p>
         <div class="behavior-grid">
           <?php foreach ($behaviors as $index => $behavior): ?>
             <label class="behavior-card">
@@ -145,15 +288,15 @@ $childEmoji = [
                 data-base-points="<?= (int)$behavior['base_points'] ?>"
                 <?= $index === 0 ? 'required' : '' ?>
               >
-              <span class="behavior-emoji"><?= htmlspecialchars($behavior['emoji']) ?></span>
-              <span class="behavior-label"><?= htmlspecialchars($behavior['label']) ?></span>
+              <span class="behavior-emoji" aria-hidden="true"><?= htmlspecialchars($behavior['emoji']) ?></span>
               <span class="behavior-points">+<?= (int)$behavior['base_points'] ?></span>
+              <span class="behavior-label"><?= htmlspecialchars($behavior['label']) ?></span>
             </label>
           <?php endforeach; ?>
         </div>
 
         <fieldset class="quality-group">
-          <legend>完成方式</legend>
+          <legend>完成方式<span class="required-star">*</span></legend>
 
           <div class="quality-radios">
             <label class="choice-card">
@@ -231,7 +374,6 @@ $childEmoji = [
   </script>
 
   <script>
-    // 服务端注入的每日进度上下文（跨日重置已处理）
     window.scoreContext = {
       dailyCap: <?= (int)$dailyCap ?>,
       dailyPointsToday: <?= (int)$dailyPointsToday ?>,
@@ -270,7 +412,6 @@ $childEmoji = [
     const bonus = excellent ? 1 : 0;
     const awarded = basePoints * multiplier + bonus;
 
-    // 与服务端 scoring.php 一致：超出每日剩余额度的部分进奖池
     const ctx = window.scoreContext || { dailyCap: 25, dailyRemaining: 25, dailyPointsToday: 0 };
     const remaining = Math.max(0, ctx.dailyRemaining);
     const toBalance = Math.min(awarded, remaining);
