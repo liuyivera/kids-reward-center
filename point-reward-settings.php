@@ -19,15 +19,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $label = trim((string)($_POST['label'] ?? ''));
         $emoji = trim((string)($_POST['emoji'] ?? '⭐'));
         $basePoints = (int)($_POST['base_points'] ?? 0);
+        $childId = (int)($_POST['child_id'] ?? 0);
+
+        $childCheck = db()->prepare('SELECT 1 FROM children WHERE id = ? AND family_id = ?');
+        $childCheck->execute([$childId, $familyId]);
+
+        if ($childId <= 0 || ! $childCheck->fetch()) {
+            http_response_code(403);
+            exit('无权管理此孩子的行为。');
+        }
 
         if ($label === '' || $basePoints <= 0) {
             $notice = '行为名称和积分必须填写。';
         } else {
+            // 修复：behaviors 表没有 created_at 字段
             $stmt = db()->prepare(
-                'INSERT INTO behaviors (child_id, label, emoji, base_points, is_active, created_at)
-                 VALUES (?, ?, ?, ?, 1, NOW())'
+                'INSERT INTO behaviors (child_id, label, emoji, base_points, is_active)
+                 VALUES (?, ?, ?, ?, 1)'
             );
-            $stmt->execute([(int)($_POST['child_id'] ?? 0), $label, $emoji !== '' ? $emoji : '⭐', $basePoints,]);
+            $stmt->execute([$childId, $label, $emoji !== '' ? $emoji : '⭐', $basePoints]);
             $notice = '已添加行为。';
         }
     }
@@ -64,9 +74,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 exit('无权管理此孩子的奖励。');
             }
 
+            // 修复：rewards 表没有 created_at 字段
             $stmt = db()->prepare(
-                'INSERT INTO rewards (child_id, title, emoji, cost, is_active, requires_parent_confirmation, created_at)
-                 VALUES (?, ?, ?, ?, 1, 1, NOW())'
+                'INSERT INTO rewards (child_id, title, emoji, cost, is_active, requires_parent_confirmation)
+                 VALUES (?, ?, ?, ?, 1, 1)'
             );
             $stmt->execute([$childId, $title, $emoji !== '' ? $emoji : '🎁', $cost]);
             $notice = '已添加奖励。';
