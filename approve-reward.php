@@ -4,7 +4,7 @@ require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/db.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header('Location: parent-rewards.php');
+    header('Location: parent-dashboard.php');
     exit;
 }
 
@@ -13,6 +13,12 @@ verifyCsrf();
 $redemptionId = (int)($_POST['redemption_id'] ?? 0);
 $action = $_POST['action'] ?? '';
 $familyId = currentParentFamilyId();
+
+// 接收返回路径，默认为控制台
+$redirectTo = trim((string)($_POST['redirect_to'] ?? 'parent-dashboard.php'));
+$safeRedirect = in_array($redirectTo, ['parent-dashboard.php', 'parent-rewards.php'], true)
+    ? $redirectTo
+    : 'parent-dashboard.php';
 
 if ($familyId === null || ! in_array($action, ['approve', 'reject'], true)) {
     http_response_code(403);
@@ -47,7 +53,7 @@ try {
         $update->execute([$redemptionId]);
 
         $pdo->commit();
-        header('Location: parent-rewards.php?rejected=1');
+        header('Location: ' . $safeRedirect . '?rejected=1');
         exit;
     }
 
@@ -80,7 +86,7 @@ try {
 
     $pdo->commit();
 
-    header('Location: parent-rewards.php?approved=1');
+    header('Location: ' . $safeRedirect . '?approved=1');
     exit;
 } catch (Exception $e) {
     $pdo->rollBack();

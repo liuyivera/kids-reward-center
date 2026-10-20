@@ -9,6 +9,11 @@ if ($familyId === null) {
 }
 
 $notice = '';
+if (isset($_GET['approved'])) {
+    $notice = '✅ 兑换已确认，积分已扣除。';
+} elseif (isset($_GET['rejected'])) {
+    $notice = '❌ 兑换已拒绝。';
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verifyCsrf();
@@ -153,9 +158,9 @@ $childrenStmt = db()->prepare('SELECT * FROM children WHERE family_id = ? ORDER 
 $childrenStmt->execute([$familyId]);
 $children = $childrenStmt->fetchAll();
 
-// 待审批（原代码定义了但从未 execute，现已修复）
+// 获取当前家庭所有待审批的兑换，并按 child_id 分组
 $pendingStmt = db()->prepare(
-    'SELECT rd.id, rd.cost, r.title, r.emoji, c.name AS child_name, c.id AS child_id
+    'SELECT rd.id, rd.cost, r.title, r.emoji, rd.child_id
      FROM redemptions rd
      JOIN rewards r ON r.id = rd.reward_id
      JOIN children c ON c.id = rd.child_id
@@ -165,7 +170,11 @@ $pendingStmt = db()->prepare(
 $pendingStmt->execute([$familyId]);
 $allPending = $pendingStmt->fetchAll();
 
-// 按位置循环分配 emoji，不再硬编码 child id
+$pendingByChild = [];
+foreach ($allPending as $p) {
+    $pendingByChild[(int)$p['child_id']][] = $p;
+}
+
 $emojiPool = ['👦', '👧', '🧒', '👶', '🐻', '🦊', '🐯', '🐼', '🐨', '🦁', '🐰', '🐷'];
 $childEmoji = [];
 foreach ($children as $i => $child) {
@@ -180,7 +189,6 @@ foreach ($children as $i => $child) {
   <title>家长控制台</title>
   <link rel="stylesheet" href="assets/style.css">
   <style>
-    /* ===== 家长控制台 - 孩子卡片 ===== */
     .dashboard-grid {
       display: grid;
       gap: 16px;
@@ -240,7 +248,6 @@ foreach ($children as $i => $child) {
       letter-spacing: 0.02em;
     }
 
-    /* 可用积分 —— 视觉焦点 */
     .dcc-balance {
       display: flex;
       align-items: baseline;
@@ -279,7 +286,6 @@ foreach ($children as $i => $child) {
       font-weight: 600;
     }
 
-    /* 今日进度 */
     .dcc-daily {
       display: flex;
       flex-direction: column;
@@ -342,7 +348,6 @@ foreach ($children as $i => $child) {
       font-weight: 600;
     }
 
-    /* 季度奖池 —— 独立视觉层级 */
     .dcc-pool {
       display: flex;
       align-items: center;
@@ -379,7 +384,87 @@ foreach ($children as $i => $child) {
       font-variant-numeric: tabular-nums;
     }
 
-    /* 操作 */
+    /* 待审批区 */
+    .dcc-pending {
+      background: #fff7ed;
+      border: 1px solid #fdba74;
+      border-radius: 12px;
+      padding: 14px;
+      margin-top: 4px;
+    }
+
+    .dcc-pending-title {
+      margin: 0 0 10px;
+      font-size: 13px;
+      font-weight: 700;
+      color: #9a3412;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .dcc-pending-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 8px 0;
+      border-top: 1px solid #fed7aa;
+    }
+
+    .dcc-pending-item:first-of-type {
+      border-top: none;
+      padding-top: 0;
+    }
+
+    .dcc-pending-info {
+      flex: 1;
+      font-size: 14px;
+      color: #431407;
+    }
+
+    .dcc-pending-info strong {
+      font-weight: 700;
+    }
+
+    .dcc-pending-actions {
+      display: flex;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .dcc-pending-actions form {
+      margin: 0;
+    }
+
+    .dcc-pending-actions button {
+      padding: 6px 12px;
+      font-size: 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      border: 1px solid transparent;
+      font-family: inherit;
+      transition: background 0.15s;
+    }
+
+    .btn-approve {
+      background: #16a34a;
+      color: #fff;
+    }
+    .btn-approve:hover {
+      background: #15803d;
+    }
+
+    .btn-reject {
+      background: #fff;
+      color: #dc2626;
+      border-color: #fca5a5;
+    }
+    .btn-reject:hover {
+      background: #fef2f2;
+    }
+
     .dcc-actions {
       display: flex;
       gap: 8px;
@@ -390,7 +475,6 @@ foreach ($children as $i => $child) {
       margin-top: 0;
     }
 
-    /* 空状态 */
     .dashboard-empty {
       background: #fff;
       border: 1px dashed #cbd5e1;
@@ -431,23 +515,6 @@ foreach ($children as $i => $child) {
         <p class="success"><?= htmlspecialchars($notice) ?></p>
       <?php endif; ?>
 
-      <?php if (! empty($allPending)): ?>
-        <a href="parent-rewards.php" style="display:block;text-decoration:none;color:inherit;margin-bottom:16px;">
-          <div class="summary-card" style="background:#fff7ed;border:1px solid #fdba74;margin:0;">
-            <h2 style="margin:0 0 8px;color:#9a3412;font-size:1rem;">⏳ 有 <?= count($allPending) ?> 个待确认的兑换</h2>
-            <?php foreach ($allPending as $p): ?>
-              <p class="muted" style="margin:4px 0;font-size:13px;">
-                <?= htmlspecialchars($p['emoji'] ?? '🎁') ?>
-                <?= htmlspecialchars($p['title']) ?>
-                · <?= htmlspecialchars($p['child_name']) ?>
-                · <?= (int)$p['cost'] ?> 分
-              </p>
-            <?php endforeach; ?>
-            <p style="margin:12px 0 0;font-weight:700;color:#9a3412;font-size:13px;">点此前往确认 →</p>
-          </div>
-        </a>
-      <?php endif; ?>
-
       <?php if (! $children): ?>
         <div class="dashboard-empty">
           <p>还没有孩子记录</p>
@@ -461,6 +528,7 @@ foreach ($children as $i => $child) {
             $dailyPercent = $dailyCap > 0 ? ($dailyShown / $dailyCap) * 100 : 0;
             $isDailyFull = $dailyShown >= $dailyCap;
             $emoji = $childEmoji[(int)$child['id']] ?? '🧒';
+            $childPending = $pendingByChild[(int)$child['id']] ?? [];
           ?>
             <article class="dcc">
               <div class="dcc-head">
@@ -478,6 +546,37 @@ foreach ($children as $i => $child) {
                   <span>分</span>
                 </div>
               </div>
+
+              <?php if (! empty($childPending)): ?>
+                <div class="dcc-pending">
+                  <div class="dcc-pending-title">⏳ 待审批兑换</div>
+                  <?php foreach ($childPending as $p): ?>
+                    <div class="dcc-pending-item">
+                      <div class="dcc-pending-info">
+                        <?= htmlspecialchars($p['emoji'] ?? '🎁') ?>
+                        <strong><?= htmlspecialchars($p['title']) ?></strong>
+                        <span style="font-size:13px;color:#9a3412;margin-left:4px;">(<?= (int)$p['cost'] ?> 分)</span>
+                      </div>
+                      <div class="dcc-pending-actions">
+                        <form method="post" action="approve-reward.php">
+                          <?= csrfField() ?>
+                          <input type="hidden" name="redemption_id" value="<?= (int)$p['id'] ?>">
+                          <input type="hidden" name="redirect_to" value="parent-dashboard.php">
+                          <input type="hidden" name="action" value="reject">
+                          <button type="submit" class="btn-reject">拒绝</button>
+                        </form>
+                        <form method="post" action="approve-reward.php">
+                          <?= csrfField() ?>
+                          <input type="hidden" name="redemption_id" value="<?= (int)$p['id'] ?>">
+                          <input type="hidden" name="redirect_to" value="parent-dashboard.php">
+                          <input type="hidden" name="action" value="approve">
+                          <button type="submit" class="btn-approve">确认扣除</button>
+                        </form>
+                      </div>
+                    </div>
+                  <?php endforeach; ?>
+                </div>
+              <?php endif; ?>
 
               <div class="dcc-daily">
                 <div class="dcc-daily-head">
