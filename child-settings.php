@@ -70,7 +70,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             $code = issueChildAccessCode($childId);
-            $notice = '已生成新访问码：' . $code;
+            $notice = '已生成新 PIN：' . $code;
         }
     }
 
@@ -207,21 +207,30 @@ $children = $childrenStmt->fetchAll();
               </form>
 
               <?php if ($accessUrl !== null): ?>
-                <div style="margin-top:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-                  <input type="text" readonly value="<?= htmlspecialchars($accessUrl) ?>" style="flex:1;min-width:180px;">
-                  <form method="post" action="child-settings.php" style="margin:0;">
-                    <?= csrfField() ?>
-                    <input type="hidden" name="action" value="generate_child_access_code">
-                    <input type="hidden" name="child_id" value="<?= (int)$child['id'] ?>">
-                    <button type="submit" class="button secondary" onclick="return confirm('确认重置访问码？旧链接将失效。');">重置访问码</button>
-                  </form>
+                <div style="margin-top:14px;padding:14px;background:#f8fafc;border-radius:12px;">
+                  <div class="muted" style="font-size:12px;">孩子 PIN（6 位数字）</div>
+                  <div style="font-size:34px;font-weight:800;letter-spacing:10px;font-family:monospace;color:#0f172a;line-height:1.2;margin:6px 0;">
+                    <?= htmlspecialchars($accessCode) ?>
+                  </div>
+                  <p class="muted" style="margin:6px 0 0;font-size:13px;">
+                    孩子可在 <strong>shop-login.php</strong> 输入这个 PIN 进入商店，也可以直接点家长发的完整链接。
+                  </p>
+                  <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+                    <input type="text" readonly value="<?= htmlspecialchars($accessUrl) ?>" style="flex:1;min-width:200px;">
+                    <form method="post" action="child-settings.php" style="margin:0;">
+                      <?= csrfField() ?>
+                      <input type="hidden" name="action" value="generate_child_access_code">
+                      <input type="hidden" name="child_id" value="<?= (int)$child['id'] ?>">
+                      <button type="submit" class="button secondary" onclick="return confirm('确认重置 PIN？旧 PIN 和旧链接将失效。');">重置 PIN</button>
+                    </form>
+                  </div>
                 </div>
               <?php else: ?>
                 <form method="post" action="child-settings.php" style="margin-top:12px;">
                   <?= csrfField() ?>
                   <input type="hidden" name="action" value="generate_child_access_code">
                   <input type="hidden" name="child_id" value="<?= (int)$child['id'] ?>">
-                  <button type="submit" class="button secondary">生成访问码</button>
+                  <button type="submit" class="button secondary">生成 PIN</button>
                 </form>
               <?php endif; ?>
 

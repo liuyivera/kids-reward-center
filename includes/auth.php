@@ -8,7 +8,7 @@ if (session_status() === PHP_SESSION_NONE) {
     ini_set('session.cookie_samesite', 'Lax');
     ini_set('session.use_strict_mode', '1');
 
-    if (APP_ENV === 'production') {
+    if (defined('APP_ENV') && APP_ENV === 'production') {
         ini_set('session.cookie_secure', '1');
         ini_set('display_errors', '0');
         ini_set('log_errors', '1');
@@ -19,7 +19,10 @@ if (session_status() === PHP_SESSION_NONE) {
 
 if (empty($_SESSION['parent_id'])) {
     $hasChildAccess = validChildAccessRequest();
-    $hasChildRequestParams = ! empty($_GET['child_id']) || ! empty($_GET['access_code']) || ! empty($_POST['child_id']) || ! empty($_POST['access_code']);
+    $hasChildRequestParams = ! empty($_GET['child_id'])
+        || ! empty($_GET['access_code'])
+        || ! empty($_POST['child_id'])
+        || ! empty($_POST['access_code']);
 
     if (! $hasChildAccess) {
         if ($hasChildRequestParams) {
@@ -27,7 +30,7 @@ if (empty($_SESSION['parent_id'])) {
             exit('无效的孩子访问码或链接已过期。请联系家长重新获取。');
         }
 
-        header('Location: /family-points/parent-login.php');
+        header('Location: parent-login.php');
         exit;
     }
 }
@@ -38,19 +41,28 @@ if (empty($_SESSION['csrf_token'])) {
 
 function currentParent(): ?array
 {
+    static $cached = false;
+    static $user = null;
+
+    if ($cached) {
+        return $user;
+    }
+
+    $cached = true;
+
     if (empty($_SESSION['parent_id'])) {
-        return null;
+        return $user = null;
     }
 
     $stmt = db()->prepare('SELECT * FROM parent_users WHERE id = ?');
     $stmt->execute([$_SESSION['parent_id']]);
-    $user = $stmt->fetch();
+    $row = $stmt->fetch();
 
-    if ($user === false || $user === null) {
-        return null;
+    if ($row === false || $row === null) {
+        return $user = null;
     }
 
-    return $user;
+    return $user = $row;
 }
 
 function currentParentFamilyId(): ?int
@@ -105,14 +117,20 @@ function appCreatorParentIds(): array
 
 function isAppCreator(?int $parentId = null): bool
 {
+    static $cache = [];
+
     $parentId = $parentId ?? (int)($_SESSION['parent_id'] ?? 0);
 
     if ($parentId <= 0) {
         return false;
     }
 
+    if (array_key_exists($parentId, $cache)) {
+        return $cache[$parentId];
+    }
+
     if (in_array($parentId, appCreatorParentIds(), true)) {
-        return true;
+        return $cache[$parentId] = true;
     }
 
     try {
@@ -121,12 +139,12 @@ function isAppCreator(?int $parentId = null): bool
         $value = $stmt->fetchColumn();
 
         if ($value === false || $value === null) {
-            return false;
+            return $cache[$parentId] = false;
         }
 
-        return (bool) $value;
+        return $cache[$parentId] = (bool) $value;
     } catch (Throwable $e) {
-        return false;
+        return $cache[$parentId] = false;
     }
 }
 
@@ -193,20 +211,24 @@ function renderCreatorDevTool(): string
     foreach ($families as $family) {
         $familyId = (int)($family['id'] ?? 0);
         $selected = $selectedFamilyId === $familyId ? ' selected' : '';
-        $options .= '<option value="' . (int)$familyId . '"' . $selected . '>' . htmlspecialchars($family['name'] ?? '家庭') . '</option>';
+        $options .= '<option value="' . (int)$familyId . '"' . $selected . '>'
+            . htmlspecialchars($family['name'] ?? '家庭')
+            . '</option>';
     }
 
-    return '<form class="family-switcher" method="post" action="' . htmlspecialchars($currentPage, ENT_QUOTES, 'UTF-8') . '">'
+    return '<form class="family-switcher" method="post" action="'
+        . htmlspecialchars($currentPage, ENT_QUOTES, 'UTF-8') . '">'
         . csrfField()
         . '<input type="hidden" name="action" value="switch_dev_family">'
-        . '<input type="hidden" name="redirect_to" value="' . htmlspecialchars($currentPage, ENT_QUOTES, 'UTF-8') . '">'
-        . '<select class="family-switcher-select" name="dev_family_id" aria-label="切换家庭" onchange="this.form.submit()">' . $options . '</select>'
-        . '</form>';
+        . '<input type="hidden" name="redirect_to" value="'
+        . htmlspecialchars($currentPage, ENT_QUOTES, 'UTF-8') . '">'
+        . '<select class="family-switcher-select" name="dev_family_id" aria-label="切换家庭" onchange="this.form.submit()">'
+        . $options
+        . '</select></form>';
 }
 
 function renderFamilyWelcomeBanner(): string
 {
-    $familyId = currentParentFamilyId();
     $familyName = currentFamilyName();
 
     if ($familyName === null || $familyName === '') {
@@ -264,7 +286,8 @@ function currentChildAccessCodeContext(?int $childId = null, ?string $code = nul
     }
 
     $stmt = db()->prepare(
-        'SELECT id, family_id, name, theme, normal_balance, daily_points_today, daily_cap, quarterly_pool, quarterly_goal
+        'SELECT id, family_id, name, theme, normal_balance, daily_points_today,
+                daily_cap, quarterly_pool, quarterly_goal
          FROM children
          WHERE id = ?
            AND access_code = ?
@@ -280,24 +303,46 @@ function currentChildAccessCodeContext(?int $childId = null, ?string $code = nul
     return $child;
 }
 
+/**
+ * 生成 6 位数字 PIN（000000-999999）。
+ * 比原来的 8 位 hex 更容易让孩子记住。
+ */
 function generateChildAccessCode(): string
 {
-    return strtoupper(bin2hex(random_bytes(4)));
+    return str_pad((string)random_int(0, 999999), 6, '0', STR_PAD_LEFT);
 }
 
+/**
+ * 为孩子生成唯一 PIN 并写入数据库。
+ * 6 位数字只有 100 万种可能，所以要查重避免碰撞。
+ */
 function issueChildAccessCode(int $childId): string
 {
-    $code = generateChildAccessCode();
-    $expiresAt = (new DateTimeImmutable('+365 days'))->format('Y-m-d H:i:s');
+    $pdo = db();
+    $maxAttempts = 20;
 
-    $stmt = db()->prepare(
-        'UPDATE children
-         SET access_code = ?, access_code_expires_at = ?
-         WHERE id = ?'
-    );
-    $stmt->execute([$code, $expiresAt, $childId]);
+    for ($i = 0; $i < $maxAttempts; $i++) {
+        $code = generateChildAccessCode();
 
-    return $code;
+        $check = $pdo->prepare('SELECT 1 FROM children WHERE access_code = ? AND id != ?');
+        $check->execute([$code, $childId]);
+        if ($check->fetchColumn()) {
+            continue;
+        }
+
+        $expiresAt = (new DateTimeImmutable('+365 days'))->format('Y-m-d H:i:s');
+
+        $stmt = $pdo->prepare(
+            'UPDATE children
+             SET access_code = ?, access_code_expires_at = ?
+             WHERE id = ?'
+        );
+        $stmt->execute([$code, $expiresAt, $childId]);
+
+        return $code;
+    }
+
+    throw new RuntimeException('无法生成唯一 PIN，请稍后再试。');
 }
 
 function childAccessUrl(int $childId, string $code): string
@@ -313,12 +358,4 @@ if (empty($_SESSION['parent_id'])) {
         $_SESSION['child_access_child_id'] = $childId;
         $_SESSION['child_access_code'] = $accessCode;
     }
-}
-
-if (! empty($_SESSION['parent_id']) && empty($_SESSION['csrf_token'])) {
-    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-}
-
-if (empty($_SESSION['parent_id']) && empty($_SESSION['csrf_token'])) {
-    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 }
