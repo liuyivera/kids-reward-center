@@ -17,6 +17,82 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+/**
+ * 渲染友好的双语错误提示页面
+ */
+function renderErrorPage(
+    string $titleZh, string $titleEn,
+    string $msgZh, string $msgEn,
+    int $statusCode = 400,
+    string $backUrl = 'index.php',
+    string $btnZh = '返回首页', string $btnEn = 'Back to Home'
+): void {
+    http_response_code($statusCode);
+    ?>
+    <!DOCTYPE html>
+    <html lang="zh-CN">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title><?= htmlspecialchars($titleZh) ?> - 家庭积分世界</title>
+      <style>
+        body { margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center; background:#f4f5f7; font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding:20px; box-sizing:border-box; }
+        .error-card { background:#fff; width:100%; max-width:440px; border-radius:24px; padding:40px 32px; box-shadow:0 10px 40px rgba(15,23,42,0.08); text-align:center; position:relative; }
+        .lang-toggle { position:absolute; top:20px; right:20px; background:#f1f5f9; border:1px solid #cbd5e1; border-radius:999px; padding:4px 12px; font-size:12px; font-weight:700; color:#475569; cursor:pointer; }
+        .error-icon { font-size:48px; margin-bottom:16px; line-height:1; }
+        .error-title { margin:0 0 12px; font-size:22px; color:#0f172a; font-weight:800; }
+        .error-desc { margin:0 0 32px; font-size:15px; color:#64748b; line-height:1.6; }
+        .error-btn { display:inline-flex; align-items:center; justify-content:center; width:100%; padding:14px; border-radius:12px; background:#2563eb; color:#fff; text-decoration:none; font-size:16px; font-weight:700; transition:background 0.2s; box-sizing:border-box; }
+        .error-btn:hover { background:#1d4ed8; }
+      </style>
+    </head>
+    <body>
+      <main class="error-card">
+        <button class="lang-toggle" id="langBtn" onclick="toggleLang()">EN</button>
+        <div class="error-icon">🛑</div>
+        <h1 class="error-title" id="errTitle"><?= htmlspecialchars($titleZh) ?></h1>
+        <p class="error-desc" id="errMsg"><?= htmlspecialchars($msgZh) ?></p>
+        <a href="<?= htmlspecialchars($backUrl) ?>" class="error-btn" id="errBtn"><?= htmlspecialchars($btnZh) ?></a>
+      </main>
+
+      <script>
+        const texts = {
+          zh: {
+            title: <?= json_encode($titleZh, JSON_UNESCAPED_UNICODE) ?>,
+            msg: <?= json_encode($msgZh, JSON_UNESCAPED_UNICODE) ?>,
+            btn: <?= json_encode($btnZh, JSON_UNESCAPED_UNICODE) ?>
+          },
+          en: {
+            title: <?= json_encode($titleEn, JSON_UNESCAPED_UNICODE) ?>,
+            msg: <?= json_encode($msgEn, JSON_UNESCAPED_UNICODE) ?>,
+            btn: <?= json_encode($btnEn, JSON_UNESCAPED_UNICODE) ?>
+          }
+        };
+
+        let lang = localStorage.getItem("family-points-language") || "zh";
+
+        function applyLang() {
+          document.getElementById("errTitle").textContent = texts[lang].title;
+          document.getElementById("errMsg").textContent = texts[lang].msg;
+          document.getElementById("errBtn").textContent = texts[lang].btn;
+          document.getElementById("langBtn").textContent = lang === "zh" ? "EN" : "中文";
+          document.title = texts[lang].title + " - 家庭积分世界";
+        }
+
+        function toggleLang() {
+          lang = lang === "zh" ? "en" : "zh";
+          localStorage.setItem("family-points-language", lang);
+          applyLang();
+        }
+
+        applyLang();
+      </script>
+    </body>
+    </html>
+    <?php
+    exit;
+}
+
 if (empty($_SESSION['parent_id'])) {
     $hasChildAccess = validChildAccessRequest();
     $hasChildRequestParams = ! empty($_GET['child_id'])
@@ -25,9 +101,13 @@ if (empty($_SESSION['parent_id'])) {
         || ! empty($_POST['access_code']);
 
     if (! $hasChildAccess) {
-        if ($hasChildRequestParams) {
-            http_response_code(403);
-            exit('无效的孩子访问码或链接已过期。请联系家长重新获取。');
+            if ($hasChildRequestParams) {
+            renderErrorPage(
+                '无法访问', 'Access Denied',
+                '无效的孩子访问码或链接已过期。请联系家长重新获取。', 'Invalid access code or link has expired. Please contact your parent.',
+                403, 'shop-login.php',
+                '重新输入 PIN', 'Re-enter PIN'
+            );
         }
 
         header('Location: parent-login.php');
@@ -150,9 +230,12 @@ function isAppCreator(?int $parentId = null): bool
 
 function requireAppCreator(): void
 {
-    if (! isAppCreator()) {
-        http_response_code(403);
-        exit('此操作仅限应用创建者。');
+        if (! isAppCreator()) {
+        renderErrorPage(
+            '权限不足', 'Insufficient Permissions',
+            '此操作仅限应用创建者。', 'This action is restricted to the app creator.',
+            403, 'index.php', '返回首页', 'Back to Home'
+        );
     }
 }
 
@@ -161,16 +244,22 @@ function requireParentAccessToChild(int $childId): void
     $familyId = currentParentFamilyId();
 
     if ($familyId === null) {
-        http_response_code(403);
-        exit('无权访问此数据。');
+        renderErrorPage(
+            '无权访问', 'Unauthorized',
+            '您当前没有绑定任何家庭。', 'You are not currently associated with any family.',
+            403, 'index.php', '返回首页', 'Back to Home'
+        );
     }
 
     $stmt = db()->prepare('SELECT 1 FROM children WHERE id = ? AND family_id = ?');
     $stmt->execute([$childId, $familyId]);
 
     if (! $stmt->fetch()) {
-        http_response_code(403);
-        exit('无权访问此数据。');
+        renderErrorPage(
+            '无权访问', 'Unauthorized',
+            '无权访问此数据。', 'You do not have permission to access this data.',
+            403, 'parent-dashboard.php', '返回控制台', 'Back to Dashboard'
+        );
     }
 }
 
@@ -183,10 +272,13 @@ function csrfField(): string
 
 function verifyCsrf(): void
 {
-    if (! hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'] ?? '')) {
+        if (! hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'] ?? '')) {
         $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-        http_response_code(403);
-        exit('会话已过期，已为您刷新安全令牌。请返回重试。');
+        renderErrorPage(
+            '会话已过期', 'Session Expired',
+            '会话已过期，已为您刷新安全令牌。请返回重试。', 'Your session has expired. A new token has been issued. Please go back and try again.',
+            403, 'javascript:history.back()', '返回重试', 'Go Back and Retry'
+        );
     }
 }
 

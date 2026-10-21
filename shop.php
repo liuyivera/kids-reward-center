@@ -6,8 +6,11 @@ $requestedChildId = isset($_GET['child_id']) ? (int) $_GET['child_id'] : 0;
 $accessCode = trim((string) ($_GET['access_code'] ?? ''));
 
 if ($requestedChildId <= 0) {
-    http_response_code(400);
-    exit('缺少孩子 ID。');
+    renderErrorPage(
+        '访问出错', 'Access Error',
+        '缺少孩子 ID。', 'Missing child ID.',
+        400, 'shop-login.php', '重新输入 PIN', 'Re-enter PIN'
+    );
 }
 
 // === 三选一身份验证 ===
@@ -51,8 +54,11 @@ if (! $child && ! empty($_SESSION['parent_id'])) {
 }
 
 if (! $child) {
-    http_response_code(403);
-    exit('无权访问此孩子的商店。请使用家长提供的完整访问链接。');
+    renderErrorPage(
+        '无权访问', 'Access Denied',
+        '无权访问此孩子的商店。请使用家长提供的完整访问链接。', 'You do not have permission to access this child\'s shop. Please use the complete link provided by your parent.',
+        403, 'shop-login.php', '重新输入 PIN', 'Re-enter PIN'
+    );
 }
 
 $familyName = '家庭';
@@ -689,8 +695,25 @@ $pending = $pendingStmt->fetchAll();
 
   <script>
     const params = new URLSearchParams(window.location.search);
-    if (params.get("error") === "duplicate") {
-      document.getElementById("error-modal").classList.remove("hidden");
+    const error = params.get("error");
+    const modal = document.getElementById("error-modal");
+    const modalTitle = modal.querySelector("h2");
+    const modalDesc = modal.querySelector("p");
+
+    if (error) {
+        if (error === "duplicate") {
+        modalTitle.textContent = "⏳ 已有兑换申请";
+        modalDesc.textContent = "请先等待家长确认当前的兑换请求。";
+        modal.classList.remove("hidden");
+        } else if (error === "insufficient_points") {
+        modalTitle.textContent = "💸 积分不足";
+        modalDesc.textContent = "你的可用积分不够兑换这个奖励哦，再去多赚点积分吧！";
+        modal.classList.remove("hidden");
+        } else if (error === "reward_not_found" || error === "not_your_reward") {
+        modalTitle.textContent = "🚫 无法兑换";
+        modalDesc.textContent = "这个奖励不存在，或者不属于你的商店。";
+        modal.classList.remove("hidden");
+        }
     }
   </script>
   <script>

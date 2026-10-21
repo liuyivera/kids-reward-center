@@ -12,8 +12,11 @@ $postChildId = (int)($_POST['child_id'] ?? 0);
 $postAccessCode = trim((string)($_POST['access_code'] ?? ''));
 
 if ($rewardId <= 0) {
-    http_response_code(400);
-    exit('缺少奖励信息。');
+    renderErrorPage(
+        '请求无效', 'Invalid Request',
+        '缺少奖励信息。', 'Missing reward information.',
+        400, 'index.php', '返回首页', 'Back to Home'
+    );
 }
 
 // === 身份判定：家长 or 孩子 ===
@@ -21,22 +24,16 @@ $viewerFamilyId = null;
 $viewerChildId = null;
 
 if (! empty($_SESSION['parent_id'])) {
-    // 家长：靠 session
     $viewerFamilyId = currentParentFamilyId();
 } else {
-    // 孩子：session 或 POST 里的 code，重新查库验证
     $sessionChildId = (int)($_SESSION['child_access_child_id'] ?? 0);
     $sessionCode = trim((string)($_SESSION['child_access_code'] ?? ''));
 
     $candidateChildId = $postChildId > 0 ? $postChildId : $sessionChildId;
 
     $candidateCodes = [];
-    if ($postAccessCode !== '') {
-        $candidateCodes[] = $postAccessCode;
-    }
-    if ($sessionCode !== '' && $sessionCode !== $postAccessCode) {
-        $candidateCodes[] = $sessionCode;
-    }
+    if ($postAccessCode !== '') $candidateCodes[] = $postAccessCode;
+    if ($sessionCode !== '' && $sessionCode !== $postAccessCode) $candidateCodes[] = $sessionCode;
 
     if ($candidateChildId > 0) {
         foreach ($candidateCodes as $code) {
@@ -58,8 +55,11 @@ if (! empty($_SESSION['parent_id'])) {
 }
 
 if ($viewerFamilyId === null) {
-    http_response_code(403);
-    exit('无权访问此功能。请从家长提供的链接重新进入。');
+    renderErrorPage(
+        '无权操作', 'Unauthorized Action',
+        '无权访问此功能。请从家长提供的链接重新进入。', 'You do not have permission to access this feature. Please re-enter using the link provided by your parent.',
+        403, 'index.php', '返回首页', 'Back to Home'
+    );
 }
 
 // === 事务 ===
@@ -68,7 +68,7 @@ $pdo->beginTransaction();
 
 try {
     $rewardStmt = $pdo->prepare(
-        'SELECT r.*
+        'SELECT r.*, c.id AS actual_child_id, c.theme
          FROM rewards r
          JOIN children c ON c.id = r.child_id
          WHERE r.id = ? AND r.is_active = 1 AND c.family_id = ?
@@ -78,12 +78,11 @@ try {
     $reward = $rewardStmt->fetch();
 
     if (! $reward) {
-        throw new Exception('奖励不存在或不属于当前家庭。');
+        throw new Exception('reward_not_found');
     }
 
-    // 孩子身份：只能兑自己的奖励
     if ($viewerChildId !== null && (int)$reward['child_id'] !== $viewerChildId) {
-        throw new Exception('无权兑换其他孩子的奖励。');
+        throw new Exception('not_your_reward');
     }
 
     $childStmt = $pdo->prepare(
@@ -93,7 +92,7 @@ try {
     $child = $childStmt->fetch();
 
     if (! $child) {
-        throw new Exception('孩子不存在或不属于当前家庭。');
+        throw new Exception('child_not_found');
     }
 
     $pendingStmt = $pdo->prepare(
@@ -103,12 +102,12 @@ try {
 
     if ((int)$pendingStmt->fetchColumn() > 0) {
         $pdo->rollBack();
-        header('Location: ' . buildShopReturnUrl($child, 'error=duplicate'));
+        header('Location: shop.php?child_id=' . (int)$child['id'] . '&' . (empty($_SESSION['parent_id']) ? 'access_code=' . urlencode($_SESSION['child_access_code']) . '&' : '') . 'error=duplicate');
         exit;
     }
 
     if ((int)$child['normal_balance'] < (int)$reward['cost']) {
-        throw new Exception('积分不足。');
+        throw new Exception('insufficient_points');
     }
 
     $insert = $pdo->prepare(
@@ -119,27 +118,25 @@ try {
 
     $pdo->commit();
 
-    header('Location: ' . buildShopReturnUrl($child, 'requested=1'));
+    $url = 'shop.php?child_id=' . (int)$child['id'];
+    if (empty($_SESSION['parent_id'])) {
+        $url .= '&access_code=' . urlencode($_SESSION['child_access_code']);
+    }
+    header('Location: ' . $url . '&requested=1');
     exit;
 } catch (Exception $e) {
     if ($pdo->inTransaction()) {
         $pdo->rollBack();
     }
-    http_response_code(400);
-    exit(htmlspecialchars($e->getMessage()));
-}
-
-function buildShopReturnUrl(array $child, string $query): string
-{
+    
+    // 捕获具体的错误类型，重定向回店铺页面显示
+    $errorCode = $e->getMessage();
     $url = 'shop.php?child_id=' . (int)$child['id'];
-
-    // 孩子身份 → 把 code 拼回 URL，让返回后仍能识别
     if (empty($_SESSION['parent_id'])) {
-        $code = trim((string)($_SESSION['child_access_code'] ?? ''));
-        if ($code !== '') {
-            $url .= '&access_code=' . rawurlencode($code);
-        }
+        $url .= '&access_code=' . urlencode($_SESSION['child_access_code']);
     }
-
-    return $url . '&' . $query;
+    
+    // 将错误码带回去
+    header('Location: ' . $url . '&error=' . urlencode($errorCode));
+    exit;
 }
