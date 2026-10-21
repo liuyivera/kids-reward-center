@@ -1,0 +1,5 @@
+---
+deployment:
+  tasks:
+    - export DEPLOYPATH=/home2/liuyi61/points.yiliudesign.com/
+    - /bin/cp -R * $DEPLOYPATH
