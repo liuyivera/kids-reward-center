@@ -142,12 +142,6 @@ button {
   font-weight: 700;
 }
 
-.parent {
-  max-width: 600px;
-  margin: 0 auto;
-  padding: 28px 16px 80px;
-}
-
 .summary {
   display: grid;
   gap: 12px;
@@ -1068,7 +1062,7 @@ body.music [data-reward-name] {
 }
 
 .parent {
-  max-width: 600px;
+  max-width: 900px;
   margin: 0 auto;
   padding: 28px 16px 80px;
 }

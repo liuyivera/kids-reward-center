@@ -189,10 +189,17 @@ foreach ($children as $i => $child) {
   <title>家长控制台</title>
   <link rel="stylesheet" href="assets/style.css">
   <style>
+    /* 强制宽度覆盖全局 CSS */
+    main.parent {
+      max-width: 900px;
+    }
+
     .dashboard-grid {
       display: grid;
       gap: 16px;
       margin-bottom: 24px;
+      /* 宽屏下自动并排：最小 340px，填满剩余空间 */
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
     }
 
     .dcc {

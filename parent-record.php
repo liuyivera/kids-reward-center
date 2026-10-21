@@ -90,11 +90,12 @@ foreach ($children as $i => $child) {
   <title>记录积分</title>
   <link rel="stylesheet" href="assets/style.css">
   <style>
-    /* ===== 孩子选择卡片 ===== */
+    /* 孩子选择按钮 */
     .child-buttons {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
       gap: 12px;
+      max-width: 600px; /* 限制最大宽，避免孩子在宽屏被拉太长 */
     }
 
     .child-button {
@@ -155,10 +156,10 @@ foreach ($children as $i => $child) {
       font-size: 1em;
     }
 
-    /* ===== 行为卡片重排 ===== */
+    /* 行为卡片：宽屏下会自动变成 4 列 */
     .behavior-grid {
       display: grid;
-      grid-template-columns: repeat(2, 1fr);
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
       gap: 12px;
     }
 
