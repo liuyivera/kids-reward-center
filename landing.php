@@ -8,35 +8,146 @@ require_once __DIR__ . '/includes/db.php';
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>家庭积分世界</title>
   <link rel="stylesheet" href="assets/style.css">
+  <style>
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #f0f9ff 0%, #e0e7ff 100%);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+
+    .landing-container {
+      width: 100%;
+      max-width: 800px;
+      text-align: center;
+    }
+
+    .landing-header {
+      margin-bottom: 40px;
+    }
+
+    .landing-header h1 {
+      font-size: 32px;
+      color: #1e3a8a;
+      margin: 0 0 12px;
+      letter-spacing: 0.02em;
+    }
+
+    .landing-header p {
+      font-size: 16px;
+      color: #64748b;
+      margin: 0;
+    }
+
+    .landing-cards {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 20px;
+      align-items: stretch;
+    }
+
+    @media (min-width: 640px) {
+      .landing-cards {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    .landing-card {
+      background: #fff;
+      border-radius: 24px;
+      padding: 40px 30px;
+      text-decoration: none;
+      color: inherit;
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.05);
+      border: 2px solid transparent;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      height: 100%;
+      box-sizing: border-box;
+    }
+
+    .landing-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 20px 40px rgba(15, 23, 42, 0.08);
+    }
+
+    .landing-card.parent:hover { border-color: #bfdbfe; }
+    .landing-card.child:hover { border-color: #fde68a; }
+
+    .landing-icon {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 40px;
+      margin-bottom: 20px;
+    }
+
+    .landing-card.parent .landing-icon { background: #eff6ff; }
+    .landing-card.child .landing-icon { background: #fffbeb; }
+
+    .landing-card h2 {
+      margin: 0 0 12px;
+      font-size: 20px;
+      color: #0f172a;
+    }
+
+    .landing-card p {
+      margin: 0 0 24px;
+      font-size: 14px;
+      color: #64748b;
+      line-height: 1.6;
+      flex: 1; /* 让文字区域撑开，保持底部按钮对齐 */
+    }
+
+    .landing-btn {
+      width: 100%;
+      padding: 14px 24px;
+      border-radius: 999px;
+      font-size: 15px;
+      font-weight: 700;
+      color: white;
+      transition: opacity 0.2s;
+      box-sizing: border-box;
+    }
+
+    .landing-card.parent .landing-btn { background: #2563eb; }
+    .landing-card.child .landing-btn { background: #f59e0b; }
+  </style>
 </head>
 <body>
-  <main style="max-width:780px;margin:48px auto;padding:20px;">
-    <h1>家庭积分世界</h1>
-    <p>欢迎来到家庭积分世界。这是公开入口页面。要管理孩子或查看家庭完整信息，请使用"家长入口"登录。</p>
+  <main class="landing-container">
+    <header class="landing-header">
+      <h1>家庭积分世界</h1>
+      <p>记录每一分努力，兑换每一份快乐。</p>
+    </header>
 
-    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:20px;align-items:center;">
-      <a class="button" href="parent-login.php">🔒 家长入口</a>
-      <span style="color:#6b7280;font-size:14px;">家长控制台（需登录）</span>
+    <div class="landing-cards">
+      <!-- 家长入口 -->
+      <a href="parent-login.php" class="landing-card parent">
+        <div class="landing-icon">🔒</div>
+        <h2>家长入口</h2>
+        <p>管理孩子的积分、审批奖励兑换，<br>以及设置家庭积分规则。</p>
+        <div class="landing-btn">登录家长控制台</div>
+      </a>
+
+      <!-- 孩子入口 -->
+      <a href="shop-login.php" class="landing-card child">
+        <div class="landing-icon">🎁</div>
+        <h2>孩子入口</h2>
+        <p>输入家长告诉你的 6 位 PIN 密码，<br>进入你的专属奖励商店。</p>
+        <div class="landing-btn">输入 PIN 进入</div>
+      </a>
     </div>
-
-    <hr style="margin:32px 0;">
-
-    <section>
-      <h2>孩子快速访问</h2>
-      <p>孩子只需记住家长给的 <strong>6 位数字 PIN</strong>，输入即可进入自己的积分和商店。</p>
-
-      <div style="margin-top:16px;">
-        <a class="button" href="shop-login.php" style="display:inline-block;max-width:260px;">🔢 输入 PIN 进入</a>
-      </div>
-
-      <p style="margin-top:20px;color:#6b7280;font-size:13px;">
-        如果家长给你发了完整链接（比如 <em>.../shop.php?child_id=12&amp;access_code=482913</em>），也可以直接点开，无需输入 PIN。
-      </p>
-    </section>
-
-    <footer style="margin-top:40px;color:#9ca3af;font-size:13px;">
-      此页面不会显示任何家庭的具体积分或孩子信息。
-    </footer>
   </main>
 </body>
 </html>
