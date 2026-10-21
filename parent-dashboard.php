@@ -158,7 +158,7 @@ $childrenStmt = db()->prepare('SELECT * FROM children WHERE family_id = ? ORDER 
 $childrenStmt->execute([$familyId]);
 $children = $childrenStmt->fetchAll();
 
-// 获取当前家庭所有待审批的兑换，并按 child_id 分组
+// 获取所有待审批的兑换
 $pendingStmt = db()->prepare(
     'SELECT rd.id, rd.cost, r.title, r.emoji, rd.child_id
      FROM redemptions rd
@@ -173,6 +173,33 @@ $allPending = $pendingStmt->fetchAll();
 $pendingByChild = [];
 foreach ($allPending as $p) {
     $pendingByChild[(int)$p['child_id']][] = $p;
+}
+
+// 获取所有孩子最近的 5 条积分记录
+$recentEventsByChild = [];
+if (! empty($children)) {
+    $childIds = array_column($children, 'id');
+    $inQuery = implode(',', array_fill(0, count($childIds), '?'));
+    
+    // 使用 UNION ALL 或窗口函数，但为了兼容低版本 MySQL，我们用子查询
+    // 因为孩子数量很少（一般2-4个），直接按孩子循环查 LIMIT 5 性能也很好且稳妥
+    foreach ($childIds as $cid) {
+        $evtStmt = db()->prepare(
+            "SELECT
+                pe.behavior_label,
+                COALESCE(b.emoji, '⭐') AS emoji,
+                pe.awarded_points,
+                pe.event_date,
+                pe.created_at
+             FROM point_events pe
+             LEFT JOIN behaviors b ON b.id = pe.behavior_id
+             WHERE pe.child_id = ?
+             ORDER BY pe.event_date DESC, pe.created_at DESC, pe.id DESC
+             LIMIT 5"
+        );
+        $evtStmt->execute([$cid]);
+        $recentEventsByChild[(int)$cid] = $evtStmt->fetchAll();
+    }
 }
 
 $emojiPool = ['👦', '👧', '🧒', '👶', '🐻', '🦊', '🐯', '🐼', '🐨', '🦁', '🐰', '🐷'];
@@ -190,15 +217,12 @@ foreach ($children as $i => $child) {
   <link rel="stylesheet" href="assets/style.css">
   <style>
     /* 强制宽度覆盖全局 CSS */
-    main.parent {
-      max-width: 900px;
-    }
+    main.parent { max-width: 900px; }
 
     .dashboard-grid {
       display: grid;
       gap: 16px;
       margin-bottom: 24px;
-      /* 宽屏下自动并排：最小 340px，填满剩余空间 */
       grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
     }
 
@@ -258,39 +282,38 @@ foreach ($children as $i => $child) {
     .dcc-balance {
       display: flex;
       align-items: baseline;
-      justify-content: space-between;
-      gap: 12px;
-      padding: 14px 18px;
-      background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
-      border: 1px solid #bfdbfe;
+      gap: 10px;
+      padding: 16px 20px;
+      background: #eff6ff;
+      border: 1px solid #dbeafe;
       border-radius: 12px;
     }
 
-    .dcc-balance-label {
-      font-size: 13px;
-      font-weight: 600;
-      color: #1e40af;
-      letter-spacing: 0.02em;
-    }
-
     .dcc-balance-value {
-      display: inline-flex;
+      display: flex;
       align-items: baseline;
-      gap: 4px;
+      gap: 2px;
     }
 
     .dcc-balance-value strong {
-      font-size: 38px;
-      line-height: 1;
+      font-size: 48px;
+      line-height: 0.9;
       font-weight: 800;
       color: #1e3a8a;
       font-variant-numeric: tabular-nums;
+      letter-spacing: -1px;
     }
 
     .dcc-balance-value span {
-      font-size: 14px;
-      color: #1e40af;
-      font-weight: 600;
+      font-size: 16px;
+      color: #1e3a8a;
+      font-weight: 700;
+    }
+
+    .dcc-balance-label {
+      font-size: 15px;
+      font-weight: 700;
+      color: #3b82f6;
     }
 
     .dcc-daily {
@@ -360,16 +383,17 @@ foreach ($children as $i => $child) {
       align-items: center;
       gap: 8px;
       padding: 10px 14px;
-      background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
-      border: 1px solid #fde68a;
+      background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%);
+      border: 1px solid #ddd6fe;
       border-radius: 10px;
       font-size: 13px;
-      color: #92400e;
+      color: #6d28d9;
     }
 
     .dcc-pool-icon {
       font-size: 16px;
       line-height: 1;
+      color: #8b5cf6;
     }
 
     .dcc-pool-label {
@@ -381,12 +405,12 @@ foreach ($children as $i => $child) {
       margin-left: auto;
       font-size: 16px;
       font-weight: 800;
-      color: #78350f;
+      color: #5b21b6;
       font-variant-numeric: tabular-nums;
     }
 
     .dcc-pool-goal {
-      color: #b45309;
+      color: #8b5cf6;
       font-size: 12px;
       font-variant-numeric: tabular-nums;
     }
@@ -455,31 +479,77 @@ foreach ($children as $i => $child) {
       transition: background 0.15s;
     }
 
-    .btn-approve {
-      background: #16a34a;
-      color: #fff;
-    }
-    .btn-approve:hover {
-      background: #15803d;
-    }
+    .btn-approve { background: #16a34a; color: #fff; }
+    .btn-approve:hover { background: #15803d; }
+    .btn-reject { background: #fff; color: #dc2626; border-color: #fca5a5; }
+    .btn-reject:hover { background: #fef2f2; }
 
-    .btn-reject {
-      background: #fff;
-      color: #dc2626;
-      border-color: #fca5a5;
+    /* 最近记录 */
+    .dcc-history {
+      border-top: 1px dashed #e2e8f0;
+      padding-top: 12px;
+      margin-top: -4px;
     }
-    .btn-reject:hover {
-      background: #fef2f2;
+    .dcc-history-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: #94a3b8;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
     }
-
-    .dcc-actions {
+    .dcc-history-list {
       display: flex;
-      gap: 8px;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .dcc-history-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      color: #475569;
+    }
+    .dcc-history-left {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .dcc-history-emoji {
+      font-size: 14px;
+    }
+    .dcc-history-time {
+      font-size: 11px;
+      color: #94a3b8;
+      margin-left: auto;
+      white-space: nowrap;
+      padding-left: 8px;
+    }
+    .dcc-history-points {
+      font-weight: 700;
+      color: #16a34a;
+      margin-left: 8px;
+      white-space: nowrap;
+    }
+
+    /* 底部操作按钮 */
+    .dcc-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 4px;
     }
 
     .dcc-actions .button {
-      flex: 1;
       margin-top: 0;
+      padding: 10px 8px;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
     .dashboard-empty {
@@ -514,7 +584,6 @@ foreach ($children as $i => $child) {
 
     <main class="parent">
       <div class="page-header">
-        <span class="eyebrow">家长端</span>
         <h1>家长控制台</h1>
       </div>
 
@@ -536,6 +605,8 @@ foreach ($children as $i => $child) {
             $isDailyFull = $dailyShown >= $dailyCap;
             $emoji = $childEmoji[(int)$child['id']] ?? '🧒';
             $childPending = $pendingByChild[(int)$child['id']] ?? [];
+            $childHistory = $recentEventsByChild[(int)$child['id']] ?? [];
+            $shopUrl = 'shop.php?child_id=' . (int)$child['id'];
           ?>
             <article class="dcc">
               <div class="dcc-head">
@@ -547,11 +618,11 @@ foreach ($children as $i => $child) {
               </div>
 
               <div class="dcc-balance">
-                <span class="dcc-balance-label">可用积分</span>
                 <div class="dcc-balance-value">
                   <strong><?= (int)($child['normal_balance'] ?? 0) ?></strong>
                   <span>分</span>
                 </div>
+                <span class="dcc-balance-label">可用积分</span>
               </div>
 
               <?php if (! empty($childPending)): ?>
@@ -607,8 +678,33 @@ foreach ($children as $i => $child) {
                 <span class="dcc-pool-goal">/ <?= (int)($child['quarterly_goal'] ?? 150) ?> 分</span>
               </div>
 
+              <?php if (! empty($childHistory)): ?>
+                <div class="dcc-history">
+                  <div class="dcc-history-title">最近记录</div>
+                  <div class="dcc-history-list">
+                    <?php foreach ($childHistory as $h): 
+                        // 判断是不是今天，如果是今天显示时间，否则显示日期
+                        $isToday = date('Y-m-d') === date('Y-m-d', strtotime($h['created_at']));
+                        $timeDisplay = $isToday 
+                            ? date('H:i', strtotime($h['created_at'])) 
+                            : date('m-d H:i', strtotime($h['created_at']));
+                    ?>
+                      <div class="dcc-history-item">
+                        <div class="dcc-history-left">
+                          <span class="dcc-history-emoji"><?= htmlspecialchars($h['emoji']) ?></span>
+                          <span><?= htmlspecialchars($h['behavior_label']) ?></span>
+                          <span class="dcc-history-time"><?= $timeDisplay ?></span>
+                        </div>
+                        <span class="dcc-history-points">+<?= (int)$h['awarded_points'] ?></span>
+                      </div>
+                    <?php endforeach; ?>
+                  </div>
+                </div>
+              <?php endif; ?>
+
               <div class="dcc-actions">
                 <a class="button secondary" href="parent-record.php?child_id=<?= (int)$child['id'] ?>">记录积分</a>
+                <a class="button secondary" href="<?= $shopUrl ?>" target="_blank" rel="noopener noreferrer">查看孩子端 ↗</a>
               </div>
             </article>
           <?php endforeach; ?>
