@@ -302,7 +302,6 @@ $childCount = (int)$childCountStmt->fetchColumn();
 
     <main class="parent">
       <div class="page-header">
-        <span class="eyebrow">家长端</span>
         <h1>家庭设置</h1>
       </div>
 

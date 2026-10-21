@@ -18,6 +18,9 @@ $excellent = isset($_POST['excellent']);
 $eventDate = $_POST['event_date'] ?? date('Y-m-d');
 $note = trim($_POST['note'] ?? '');
 
+// 修复：验证 child 属于当前家长的家庭
+requireParentAccessToChild($childId);
+
 if (! in_array($completionBase, ['reminder', 'self_initiated'], true)) {
     exit('完成方式无效。');
 }

@@ -552,7 +552,6 @@ foreach ($children as $i => $child) {
     <main class="parent">
       <div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap;">
         <div>
-          <span class="eyebrow">家长端</span>
           <h1 style="margin: 4px 0 0;">孩子设置</h1>
         </div>
         <button class="button" onclick="document.getElementById('addChildModal').showModal()" style="margin: 0; padding: 10px 20px;">

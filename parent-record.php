@@ -253,7 +253,6 @@ foreach ($children as $i => $child) {
 
     <main class="parent">
       <div class="page-header">
-        <span class="eyebrow">家长端</span>
         <h1>记录积分</h1>
       </div>
 
