@@ -451,3 +451,110 @@ if (empty($_SESSION['parent_id'])) {
         $_SESSION['child_access_code'] = $accessCode;
     }
 }
+
+/**
+ * 全局注入顶部导航栏的 CSS
+ */
+function renderGlobalTopbarStyles(): void
+{
+    echo <<<'CSS'
+<style>
+/* 强制覆盖所有全局干扰，重塑 Topbar */
+.topbar {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  flex-wrap: wrap !important;
+  padding: 12px 20px !important;
+  background: rgba(15, 23, 42, 0.96) !important;
+  color: white !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 1000 !important;
+}
+.topbar-brand {
+  font-weight: 800 !important;
+  font-size: 16px !important;
+  color: white !important;
+  white-space: nowrap !important;
+}
+.topbar-nav {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 8px !important;
+  flex-wrap: wrap !important;
+}
+.nav-link {
+  color: rgba(255,255,255,0.85) !important;
+  text-decoration: none !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  padding: 6px 12px !important;
+  border-radius: 999px !important;
+  white-space: nowrap !important;
+  transition: all 0.2s !important;
+}
+.nav-link:hover, .nav-link.active {
+  background: rgba(255,255,255,0.15) !important;
+  color: white !important;
+}
+.nav-link-logout {
+  color: #fca5a5 !important;
+}
+.nav-link-logout:hover {
+  background: rgba(239, 68, 68, 0.2) !important;
+}
+.family-switcher {
+  display: flex !important;
+  align-items: center !important;
+}
+.family-switcher-select {
+  background: rgba(255,255,255,0.1) !important;
+  color: white !important;
+  border: 1px solid rgba(255,255,255,0.2) !important;
+  padding: 6px 10px !important;
+  border-radius: 8px !important;
+  font-size: 13px !important;
+}
+
+/* 手机端专属适配 */
+@media (max-width: 768px) {
+  .topbar {
+    flex-direction: column !important;
+    padding: 12px 16px !important;
+    gap: 12px !important;
+  }
+  .topbar-brand {
+    text-align: center !important;
+    width: 100% !important;
+    font-size: 18px !important;
+  }
+  .topbar-nav {
+    width: 100% !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    justify-content: flex-start !important;
+    padding-bottom: 6px !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+  .topbar-nav::-webkit-scrollbar {
+    display: none !important;
+  }
+  .nav-link {
+    flex-shrink: 0 !important;
+  }
+  /* 把 Creator 下拉框和退出按钮放在同一行居中 */
+  .family-switcher {
+    width: 100% !important;
+    justify-content: center !important;
+    margin-top: 4px !important;
+  }
+}
+</style>
+CSS;
+}

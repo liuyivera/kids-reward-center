@@ -177,6 +177,7 @@ if ($selectedChild) {
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
+  <?php renderGlobalTopbarStyles(); ?>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>积分规则 - 家庭积分世界</title>
