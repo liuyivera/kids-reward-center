@@ -104,3 +104,35 @@ try {
     $pdo->rollBack();
     echo "Error applying penalty: " . $e->getMessage() . "\n";
 }
+
+// 6. 可选：发送通知到Echo Show 5 - Kitchen
+// ... 原有的扣分逻辑 (如 $deductAmount, $child['name'] 等) ...
+// ... 扣分逻辑成功写入数据库后 ...
+
+if ($deductAmount > 0 && defined('VM_TOKEN') && VM_TOKEN !== '') {
+    $speechText = "Points alert:{$child['name']}did not complete her violin task，{$deductAmount}points removed. Do better tomorrow!";
+    
+    $url = "https://api-v3.voicemonkey.io/announce";
+    
+    // 使用 JSON 格式发送
+    $payload = [
+        'token'  => VM_TOKEN,
+        'device' => VM_DEVICE,
+        'speech' => $speechText,
+        'voice'  => 'Polly.Salli' // 👈 强行指定使用中文语音引擎
+    ];
+
+    $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+    curl_setopt($ch, CURLOPT_HTTPHEADER, [
+        'Content-Type: application/json',
+        'Content-Length: ' . strlen(json_encode($payload))
+    ]);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 2); 
+    curl_exec($ch);
+    curl_close($ch);
+}
+
+echo "Penalty applied: -{$deductAmount} points for child {$child['name']}. Reason: {$reason}\n";

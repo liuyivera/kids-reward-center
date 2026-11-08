@@ -1,5 +1,8 @@
 <?php
 
+// 强制统一使用美西时间，防止 Hostgator 服务器时区和本地不一致
+date_default_timezone_set('America/New_York');
+
 $localConfigFile = __DIR__ . '/config.local.php';
 $runtimeConfig = [];
 
@@ -12,7 +15,9 @@ if (is_array($runtimeConfig) && ! empty($runtimeConfig)) {
     $db = $runtimeConfig['db'] ?? [];
     $creatorParentIds = $runtimeConfig['creator_parent_ids'] ?? [];
     $creatorParentId = $runtimeConfig['creator_parent_id'] ?? 0;
-
+    $vmConfig = $runtimeConfig['voicemonkey'] ?? [];
+    define('VM_TOKEN', $vmConfig['token'] ?? '');
+    define('VM_DEVICE', $vmConfig['device'] ?? '');
     define('APP_ENV', $appEnv);
     define('DB_HOST', $db['host'] ?? getenv('DB_HOST') ?: 'localhost');
     define('DB_PORT', $db['port'] ?? getenv('DB_PORT') ?: '3306');

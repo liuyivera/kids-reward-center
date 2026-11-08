@@ -604,9 +604,18 @@ foreach ($children as $i => $child) {
         <div class="dashboard-grid">
           <?php foreach ($children as $child):
             $dailyCap = max(1, (int)($child['daily_cap'] ?? 25));
-            $dailyShown = min($dailyCap, max(0, (int)($child['daily_points_today'] ?? 0)));
+            
+            // 修复：判断最后得分日期是不是今天，如果不是，今日已得归零
+            $lastScoreDate = (string)($child['last_score_date'] ?? '');
+            if ($lastScoreDate !== date('Y-m-d')) {
+                $dailyShown = 0;
+            } else {
+                $dailyShown = min($dailyCap, max(0, (int)($child['daily_points_today'] ?? 0)));
+            }
+            
             $dailyPercent = $dailyCap > 0 ? ($dailyShown / $dailyCap) * 100 : 0;
             $isDailyFull = $dailyShown >= $dailyCap;
+            
             $emoji = $childEmoji[(int)$child['id']] ?? '🧒';
             $childPending = $pendingByChild[(int)$child['id']] ?? [];
             $childHistory = $recentEventsByChild[(int)$child['id']] ?? [];

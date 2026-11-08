@@ -63,6 +63,8 @@ if ($selectedChildId > 0) {
 $dailyCap = max(1, (int)($selectedChild['daily_cap'] ?? 25));
 $dailyPointsToday = max(0, (int)($selectedChild['daily_points_today'] ?? 0));
 $lastScoreDate = (string)($selectedChild['last_score_date'] ?? '');
+
+// 如果是昨天及更早的记录，今日进度强制视为 0
 if ($lastScoreDate !== date('Y-m-d')) {
     $dailyPointsToday = 0;
 }
