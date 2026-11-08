@@ -31,6 +31,7 @@ if ($creatorMode) {
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
+  <?php renderGlobalTopbarStyles(); ?>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>家庭列表</title>
