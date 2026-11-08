@@ -187,7 +187,10 @@ if (! empty($children)) {
         $evtStmt = db()->prepare(
             "SELECT
                 pe.behavior_label,
-                COALESCE(b.emoji, '⭐') AS emoji,
+                CASE 
+    WHEN pe.completion_type = 'penalty_violin' THEN '🎻'
+    ELSE COALESCE(b.emoji, '⭐') 
+END AS emoji,
                 pe.awarded_points,
                 pe.event_date,
                 pe.created_at
@@ -696,7 +699,12 @@ foreach ($children as $i => $child) {
                           <span><?= htmlspecialchars($h['behavior_label']) ?></span>
                           <span class="dcc-history-time"><?= $timeDisplay ?></span>
                         </div>
-                        <span class="dcc-history-points">+<?= (int)$h['awarded_points'] ?></span>
+                        <?php
+  $pts = (int)$h['awarded_points'];
+  $ptsText = $pts >= 0 ? '+' . $pts : (string)$pts;
+  $ptsColor = $pts >= 0 ? '#16a34a' : '#dc2626';
+?>
+<span class="dcc-history-points" style="color: <?= $ptsColor ?>;"><?= $ptsText ?></span>
                       </div>
                     <?php endforeach; ?>
                   </div>
