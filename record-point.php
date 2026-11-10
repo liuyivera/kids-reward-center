@@ -66,11 +66,19 @@ if ($awarded > 0 && defined('VM_TOKEN') && VM_TOKEN !== '') {
     $dictionary = [
         '姐姐' => 'Wrenley', 
         '弟弟' => 'Charley',
-        '小提琴' => 'violin',
+        '拉小提琴10分钟' => 'playing violin for 10 minutes',
+        '拉小提琴20分钟' => 'playing violin for 20 minutes',
         '好好刷牙' => 'brushing teeth',
         '收拾玩具' => 'cleaning up toys',
         '第一次提醒就照做' => 'following instructions',
-        '主动练琴' => 'practicing violin'
+        '主动练琴' => 'practicing violin',
+        '完成学习任务' => 'studying',
+        '屏幕时间到主动关机' => 'turning off screen time immediately',
+        '小好事' => 'little good things',
+        '自己看书' => 'reading books',
+        '自觉开始学习' => 'studying by yourself',
+        'iPad到点主动交还' => 'returning iPad on time',
+        '做题（额外的）' => 'doing extra homework',
     ];
     
     // 2. 将中文变量转换为英文/拼音
